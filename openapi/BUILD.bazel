@@ -1,0 +1,26 @@
+load(":toolchains.bzl", "gerrit_openapi_extractor_toolchain")
+
+package(default_visibility = ["//visibility:public"])
+
+# One toolchain type for the (source -> spec) extractor. Swappable: a consumer
+# registers its own ahead of the default in its MODULE.bazel.
+toolchain_type(name = "extractor_toolchain_type")
+
+gerrit_openapi_extractor_toolchain(
+    name = "default_extractor",
+    tool = "//tools/default_extractor:extractor",
+)
+
+toolchain(
+    name = "default_extractor_toolchain",
+    toolchain = ":default_extractor",
+    toolchain_type = ":extractor_toolchain_type",
+)
+
+exports_files([
+    "providers.bzl",
+    "toolchains.bzl",
+    "defs.bzl",
+    "generate.bzl",
+    "preview.bzl",
+])

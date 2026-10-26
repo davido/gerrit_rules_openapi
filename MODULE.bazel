@@ -1,0 +1,31 @@
+"""gerrit_rules_openapi — build-time Bazel ruleset that extracts an OpenAPI 3.1
+document from Gerrit's REST bindings (source -> spec).
+
+NOT a Gerrit plugin: nothing here is loaded at runtime. Consumed via bazel_dep
+by Gerrit core and by plugins built in-tree or standalone. See
+split-openapi-design-proposal-v2.md (§5, §6a, §6b).
+"""
+
+module(
+    name = "gerrit_rules_openapi",
+    version = "1.0.0",
+    compatibility_level = 0,
+)
+
+bazel_dep(name = "bazel_skylib", version = "1.8.2")
+
+# The default extractor backend is a program (Python today, Java+Python in the
+# real lift). rules_python is a NORMAL dep: a consumer that only packages a
+# committed spec via //openapi:defs.bzl never instantiates openapi_spec, so the
+# extractor action — and this toolchain — are never built for that consumer.
+bazel_dep(name = "rules_python", version = "1.7.0")
+
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(
+    is_default = True,
+    python_version = "3.11",
+)
+
+# Register the default (swappable) extractor toolchain. A site or experiment may
+# register its own ahead of this one.
+register_toolchains("//openapi:default_extractor_toolchain")

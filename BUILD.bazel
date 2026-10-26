@@ -1,0 +1,3 @@
+# Root package intentionally empty. Rules live under //openapi, the default
+# extractor backend under //tools/default_extractor, and a smoke consumer under
+# //examples/smoke.

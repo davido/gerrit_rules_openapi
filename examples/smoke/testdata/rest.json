@@ -1,0 +1,10 @@
+{
+  "paths": {
+    "/config/server/version": {
+      "get": {"operationId": "getConfigServerVersion", "summary": "Get version"}
+    },
+    "/accounts/self": {
+      "get": {"operationId": "getAccountSelf", "summary": "Get account"}
+    }
+  }
+}

@@ -1,0 +1,80 @@
+load("@bazel_skylib//rules:diff_test.bzl", "diff_test")
+load("//openapi:context.bzl", "core_context_archive")
+load("//openapi:defs.bzl", "openapi_resource_jar")
+load("//openapi:generate.bzl", "openapi_export", "openapi_publish", "openapi_spec", "openapi_stats")
+load("//openapi:preview.bzl", "openapi_dev_serve")
+
+package(default_visibility = ["//visibility:private"])
+
+# --- Core-context archive (step 2: bootstrapped from the frozen revision) -----
+# In the real bootstrap `srcs` is the gerrit6 REST-context + DTO source closure;
+# here it is a stand-in. The archive is deterministic, so its provenance is a
+# stable golden a plugin pins and a drift gate diffs.
+core_context_archive(
+    name = "core_context",
+    srcs = glob(["testdata/context/*.txt"]),
+    source_rev = "de64d4d2fe53904e4aa16103c4eab0131ec5ff19",
+    tags = ["manual"],
+    version = "3.15.0-SMOKE",
+)
+
+filegroup(
+    name = "core_context_provenance",
+    srcs = [":core_context"],
+    output_group = "provenance",
+    tags = ["manual"],
+)
+
+diff_test(
+    name = "core_context_provenance_stable",
+    file1 = ":core_context_provenance",
+    file2 = "testdata/core_context.provenance.golden.json",
+)
+
+# --- Generation (tagged `manual`: not selected by the //... wildcard) ---------
+openapi_spec(
+    name = "spec",
+    srcs = ["testdata/rest.json"],
+    tags = ["manual"],
+    version = "3.15.0-SMOKE",
+)
+
+openapi_export(
+    name = "export",
+    spec = ":spec",
+    tags = ["manual"],
+)
+
+openapi_stats(
+    name = "stats",
+    spec = ":spec",
+    tags = ["manual"],
+)
+
+openapi_publish(
+    name = "publish",
+    spec = ":spec",
+    tags = ["manual"],
+)
+
+openapi_dev_serve(
+    name = "serve",
+    spec = ":spec",
+    tags = ["manual"],
+)
+
+# --- Packaging (reads the COMMITTED spec; no generator dependency) ------------
+openapi_resource_jar(
+    name = "resource",
+    spec = "testdata/expected.json",
+)
+
+# --- Byte-equality gate -------------------------------------------------------
+# Regeneration must reproduce the committed spec exactly. This test is NOT
+# manual, so `bazel test //...` selects it; it pulls :spec as a dependency,
+# demonstrating that `manual` blocks wildcard SELECTION, not dependency builds.
+diff_test(
+    name = "spec_matches_golden",
+    file1 = ":spec",
+    file2 = "testdata/expected.json",
+)

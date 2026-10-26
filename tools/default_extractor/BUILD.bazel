@@ -1,0 +1,12 @@
+load("@rules_python//python:defs.bzl", "py_binary")
+
+# The default extractor backend. A py_binary so its runfiles (interpreter +
+# sources) are genuinely required — exercising the FilesToRunProvider contract
+# the toolchain captures. The real backend is a java_binary + py deps lifted
+# from gerrit6; it plugs in here unchanged behind the same CLI.
+py_binary(
+    name = "extractor",
+    srcs = ["extractor.py"],
+    main = "extractor.py",
+    visibility = ["//visibility:public"],
+)

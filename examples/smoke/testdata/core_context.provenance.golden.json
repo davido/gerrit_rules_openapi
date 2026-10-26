@@ -1,0 +1,16 @@
+{
+  "archive_sha256": "954a1fa0c912472f5c87fe98485bc784b5f0a56e5e787b26f48a56062a65e6a5",
+  "entries": [
+    {
+      "path": "core-context/change_rest_api_module.txt",
+      "sha256": "29748a6a12439eb97738dc7e263c71d5a917e358d89eebf453449d93a0fcbb44"
+    },
+    {
+      "path": "core-context/project_rest_api_module.txt",
+      "sha256": "e01262ce940383556e8cde4f6456a50b328808c30e048b7e052ac635e6b5da8a"
+    }
+  ],
+  "schema": "gerrit_rules_openapi/core-context@1",
+  "source_rev": "de64d4d2fe53904e4aa16103c4eab0131ec5ff19",
+  "version": "3.15.0-SMOKE"
+}

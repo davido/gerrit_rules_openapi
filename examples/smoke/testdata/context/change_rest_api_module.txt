@@ -1,0 +1,3 @@
+// stand-in for the ChangeRestApiModule context-module source closure.
+// The real archive carries the actual Java source the extractor manifest needs.
+module: ChangeRestApiModule

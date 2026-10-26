@@ -1,0 +1,21 @@
+{
+  "info": {
+    "title": "Gerrit REST API",
+    "version": "3.15.0-SMOKE"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/accounts/self": {
+      "get": {
+        "operationId": "getAccountSelf",
+        "summary": "Get account"
+      }
+    },
+    "/config/server/version": {
+      "get": {
+        "operationId": "getConfigServerVersion",
+        "summary": "Get version"
+      }
+    }
+  }
+}

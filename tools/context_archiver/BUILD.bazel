@@ -1,0 +1,9 @@
+load("@rules_python//python:defs.bzl", "py_binary")
+
+# Produces the deterministic core-context source-closure archive + provenance.
+py_binary(
+    name = "archiver",
+    srcs = ["archiver.py"],
+    main = "archiver.py",
+    visibility = ["//visibility:public"],
+)

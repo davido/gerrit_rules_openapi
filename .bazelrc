@@ -1,0 +1,4 @@
+common --enable_bzlmod
+# Keep generation targets out of wildcard selection; they are tagged `manual`.
+# `bazel test //...` still builds+tests the smoke example (not manual).
+test --test_output=errors
