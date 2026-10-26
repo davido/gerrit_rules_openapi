@@ -1,0 +1,64 @@
+load("@rules_python//python:defs.bzl", "py_binary", "py_test")
+
+package(default_visibility = ["//visibility:public"])
+
+# Gate scripts exported so a consumer can wire them with openapi_json_gate_test
+# over its real build output. Each takes generated spec/overrides paths as argv,
+# so they run in a consumer, not standalone here.
+exports_files([
+    "openapi_spec_validator.py",
+    "openapi_domain_slices_test.py",
+    "overrides_curated_minimality_test.py",
+    "overrides_structural_test.py",
+])
+
+# Action body of the endpoint-report rule: unpacks source jars into a manifest
+# and runs the Java generator. (Referenced by the pipeline rule as its _tool.)
+py_binary(
+    name = "report_tool",
+    srcs = ["report_tool.py"],
+    main = "report_tool.py",
+)
+
+# The doc->overrides miner: parses hand-written REST prose the Java Tree API
+# cannot see into generated overrides. stdlib-only; modules import each other by
+# bare name (imports = ["."]).
+OVERRIDE_EXTRACTOR_SRCS = [
+    "override_extractor.py",
+    "doc_common.py",
+    "asciidoc_parser.py",
+    "markdown_parser.py",
+    "doc_dispatch.py",
+    "overrides_builder.py",
+]
+
+py_binary(
+    name = "override_extractor",
+    srcs = OVERRIDE_EXTRACTOR_SRCS,
+    imports = ["."],
+    main = "override_extractor.py",
+)
+
+py_test(
+    name = "override_extractor_test",
+    srcs = OVERRIDE_EXTRACTOR_SRCS + ["override_extractor_test.py"],
+    imports = ["."],
+    main = "override_extractor_test.py",
+)
+
+py_test(
+    name = "openapi_spec_validator_test",
+    srcs = [
+        "openapi_spec_validator.py",
+        "openapi_spec_validator_test.py",
+    ],
+    imports = ["."],
+    main = "openapi_spec_validator_test.py",
+)
+
+# Non-failing diagnostic: classify curated edits against the generated overrides.
+py_binary(
+    name = "overrides_stale_edits",
+    srcs = ["overrides_stale_edits.py"],
+    main = "overrides_stale_edits.py",
+)

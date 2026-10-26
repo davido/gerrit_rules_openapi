@@ -2,8 +2,7 @@
 document from Gerrit's REST bindings (source -> spec).
 
 NOT a Gerrit plugin: nothing here is loaded at runtime. Consumed via bazel_dep
-by Gerrit core and by plugins built in-tree or standalone. See
-split-openapi-design-proposal-v2.md (§5, §6a, §6b).
+by Gerrit core and by plugins built in-tree or standalone.
 """
 
 module(

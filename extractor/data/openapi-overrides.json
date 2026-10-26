@@ -1,0 +1,735 @@
+{
+  "_comment": "Curated OpenAPI overrides layer: the document envelope (info, servers, securitySchemes, security, tags) plus the non-derivable operation edits -- hand-authored operations the doc extractor cannot match, and per-field corrections (e.g. sentence-cased summaries, edited descriptions) that win over the generated overrides. The bulk mined prose lives in the generated build output (override_extractor.py); compose layers generated + curated. Keep this file to only what the generator cannot or should not derive.",
+  "info": {
+    "description": "The Gerrit Code Review REST API. Paths, parameters, and payload schemas are generated statically from the server's REST bindings; human-authored summaries and descriptions are supplied here and merged in at build time.",
+    "license": {
+      "name": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://{host}",
+      "description": "Anonymously accessible endpoints.",
+      "variables": {
+        "host": {
+          "default": "gerrit-review.googlesource.com"
+        }
+      }
+    },
+    {
+      "url": "https://{host}/a",
+      "description": "Authenticated endpoints (HTTP basic auth).",
+      "variables": {
+        "host": {
+          "default": "gerrit-review.googlesource.com"
+        }
+      }
+    }
+  ],
+  "securitySchemes": {
+    "basicAuth": {
+      "type": "http",
+      "scheme": "basic",
+      "description": "HTTP basic auth with a username and a generated HTTP password."
+    }
+  },
+  "security": [
+    {
+      "basicAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "access",
+      "description": "Project access rights."
+    },
+    {
+      "name": "accounts",
+      "description": "Accounts, preferences, SSH keys, and capabilities."
+    },
+    {
+      "name": "changes",
+      "description": "Changes, revisions, comments, reviewers, and edits."
+    },
+    {
+      "name": "config",
+      "description": "Server configuration, caches, and tasks."
+    },
+    {
+      "name": "groups",
+      "description": "Groups and their members."
+    },
+    {
+      "name": "projects",
+      "description": "Projects, branches, tags, and dashboards."
+    },
+    {
+      "name": "plugins",
+      "description": "Installed plugins."
+    }
+  ],
+  "operations": [
+    {
+      "method": "GET",
+      "path": "/changes/{change-id}/detail",
+      "summary": "Get change detail",
+      "responses": {
+        "200": {
+          "description": "The change as a ChangeInfo entity, with the detail fields populated."
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/access",
+      "summary": "List access rights",
+      "description": "Lists the access rights of one or more projects, named by the repeated project parameter.",
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "example": {
+                "All-Projects": {
+                  "revision": "edd453d18e08640e67a8c9a150cec998ed0ac9aa",
+                  "local": {
+                    "GLOBAL_CAPABILITIES": {
+                      "permissions": {
+                        "priority": {
+                          "rules": {
+                            "15bfcd8a6de1a69c50b30cedcdcc951c15703152": {
+                              "action": "BATCH"
+                            }
+                          }
+                        },
+                        "streamEvents": {
+                          "rules": {
+                            "15bfcd8a6de1a69c50b30cedcdcc951c15703152": {
+                              "action": "ALLOW"
+                            }
+                          }
+                        },
+                        "administrateServer": {
+                          "rules": {
+                            "53a4f647a89ea57992571187d8025f830625192a": {
+                              "action": "ALLOW"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "refs/meta/config": {
+                      "permissions": {
+                        "submit": {
+                          "rules": {
+                            "53a4f647a89ea57992571187d8025f830625192a": {
+                              "action": "ALLOW"
+                            },
+                            "global:Project-Owners": {
+                              "action": "ALLOW"
+                            }
+                          }
+                        },
+                        "label-Code-Review": {
+                          "label": "Code-Review",
+                          "rules": {
+                            "53a4f647a89ea57992571187d8025f830625192a": {
+                              "action": "ALLOW",
+                              "min": -2,
+                              "max": 2
+                            },
+                            "global:Project-Owners": {
+                              "action": "ALLOW",
+                              "min": -2,
+                              "max": 2
+                            }
+                          }
+                        },
+                        "read": {
+                          "exclusive": true,
+                          "rules": {
+                            "53a4f647a89ea57992571187d8025f830625192a": {
+                              "action": "ALLOW"
+                            },
+                            "global:Project-Owners": {
+                              "action": "ALLOW"
+                            }
+                          }
+                        },
+                        "push": {
+                          "rules": {
+                            "53a4f647a89ea57992571187d8025f830625192a": {
+                              "action": "ALLOW"
+                            },
+                            "global:Project-Owners": {
+                              "action": "ALLOW"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "refs/for/refs/*": {
+                      "permissions": {
+                        "pushMerge": {
+                          "rules": {
+                            "global:Registered-Users": {
+                              "action": "ALLOW"
+                            }
+                          }
+                        },
+                        "push": {
+                          "rules": {
+                            "global:Registered-Users": {
+                              "action": "ALLOW"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "refs/tags/*": {
+                      "permissions": {
+                        "createSignedTag": {
+                          "rules": {
+                            "53a4f647a89ea57992571187d8025f830625192a": {
+                              "action": "ALLOW"
+                            },
+                            "global:Project-Owners": {
+                              "action": "ALLOW"
+                            }
+                          }
+                        },
+                        "createTag": {
+                          "rules": {
+                            "53a4f647a89ea57992571187d8025f830625192a": {
+                              "action": "ALLOW"
+                            },
+                            "global:Project-Owners": {
+                              "action": "ALLOW"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "refs/heads/*": {
+                      "permissions": {
+                        "forgeCommitter": {
+                          "rules": {
+                            "53a4f647a89ea57992571187d8025f830625192a": {
+                              "action": "ALLOW"
+                            },
+                            "global:Project-Owners": {
+                              "action": "ALLOW"
+                            }
+                          }
+                        },
+                        "forgeAuthor": {
+                          "rules": {
+                            "global:Registered-Users": {
+                              "action": "ALLOW"
+                            }
+                          }
+                        },
+                        "submit": {
+                          "rules": {
+                            "53a4f647a89ea57992571187d8025f830625192a": {
+                              "action": "ALLOW"
+                            },
+                            "global:Project-Owners": {
+                              "action": "ALLOW"
+                            }
+                          }
+                        },
+                        "editTopicName": {
+                          "rules": {
+                            "53a4f647a89ea57992571187d8025f830625192a": {
+                              "action": "ALLOW",
+                              "force": true
+                            },
+                            "global:Project-Owners": {
+                              "action": "ALLOW",
+                              "force": true
+                            }
+                          }
+                        },
+                        "label-Code-Review": {
+                          "label": "Code-Review",
+                          "rules": {
+                            "global:Registered-Users": {
+                              "action": "ALLOW",
+                              "min": -1,
+                              "max": 1
+                            },
+                            "53a4f647a89ea57992571187d8025f830625192a": {
+                              "action": "ALLOW",
+                              "min": -2,
+                              "max": 2
+                            },
+                            "global:Project-Owners": {
+                              "action": "ALLOW",
+                              "min": -2,
+                              "max": 2
+                            }
+                          }
+                        },
+                        "create": {
+                          "rules": {
+                            "53a4f647a89ea57992571187d8025f830625192a": {
+                              "action": "ALLOW"
+                            },
+                            "global:Project-Owners": {
+                              "action": "ALLOW"
+                            }
+                          }
+                        },
+                        "push": {
+                          "rules": {
+                            "53a4f647a89ea57992571187d8025f830625192a": {
+                              "action": "ALLOW"
+                            },
+                            "global:Project-Owners": {
+                              "action": "ALLOW"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "refs/*": {
+                      "permissions": {
+                        "read": {
+                          "rules": {
+                            "global:Anonymous-Users": {
+                              "action": "ALLOW"
+                            },
+                            "53a4f647a89ea57992571187d8025f830625192a": {
+                              "action": "ALLOW"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "is_owner": true,
+                  "owner_of": [
+                    "GLOBAL_CAPABILITIES",
+                    "refs/meta/config",
+                    "refs/for/refs/*",
+                    "refs/tags/*",
+                    "refs/heads/*",
+                    "refs/*"
+                  ],
+                  "can_upload": true,
+                  "can_add": true,
+                  "can_add_tags": true,
+                  "config_visible": true,
+                  "groups": {
+                    "53a4f647a89ea57992571187d8025f830625192a": {
+                      "url": "#/admin/groups/uuid-53a4f647a89ea57992571187d8025f830625192a",
+                      "options": {},
+                      "description": "Gerrit Site Administrators",
+                      "group_id": 1,
+                      "owner": "Administrators",
+                      "owner_id": "53a4f647a89ea57992571187d8025f830625192a",
+                      "created_on": "2009-06-08 23:31:00.000000000",
+                      "name": "Administrators"
+                    },
+                    "global:Registered-Users": {
+                      "options": {},
+                      "name": "Registered Users"
+                    },
+                    "global:Project-Owners": {
+                      "options": {},
+                      "name": "Project Owners"
+                    },
+                    "15bfcd8a6de1a69c50b30cedcdcc951c15703152": {
+                      "url": "#/admin/groups/uuid-15bfcd8a6de1a69c50b30cedcdcc951c15703152",
+                      "options": {},
+                      "description": "Service accounts that interact with Gerrit",
+                      "group_id": 2,
+                      "owner": "Administrators",
+                      "owner_id": "53a4f647a89ea57992571187d8025f830625192a",
+                      "created_on": "2009-06-08 23:31:00.000000000",
+                      "name": "Service Users"
+                    },
+                    "global:Anonymous-Users": {
+                      "options": {},
+                      "name": "Anonymous Users"
+                    }
+                  }
+                },
+                "MyProject": {
+                  "revision": "61157ed63e14d261b6dca40650472a9b0bd88474",
+                  "inherits_from": {
+                    "id": "All-Projects",
+                    "name": "All-Projects",
+                    "description": "Access inherited by all other projects."
+                  },
+                  "local": {},
+                  "is_owner": true,
+                  "owner_of": [
+                    "refs/*"
+                  ],
+                  "can_upload": true,
+                  "can_add": true,
+                  "can_add_tags": true,
+                  "config_visible": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts",
+      "summary": "Query accounts",
+      "description": "Queries accounts visible to the caller. The query is given by the query parameter; use limit and start to page and o to request extra fields."
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/{account-id}",
+      "summary": "Get account",
+      "description": "Returns the details of one account as an AccountInfo entity."
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/{account-id}/starred.changes",
+      "summary": "Get changes with default star",
+      "description": "Gets the changes that were starred with the default star by the identified user account.",
+      "responses": {
+        "200": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ChangeInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/changes",
+      "summary": "Query changes",
+      "description": "Queries changes visible to the caller. The query is given by the repeatable query parameter; use limit/start to page and o to request extra fields."
+    },
+    {
+      "method": "POST",
+      "path": "/changes",
+      "summary": "Create change",
+      "description": "Creates a new change from a ChangeInput entity."
+    },
+    {
+      "method": "GET",
+      "path": "/changes/{change-id}",
+      "summary": "Get change",
+      "description": "Retrieves a single change as a ChangeInfo entity; request additional data with the o parameter."
+    },
+    {
+      "method": "POST",
+      "path": "/changes/{change-id}/revisions/{revision-id}/review",
+      "summary": "Set review",
+      "description": "Applies a review to a revision: labels, comments, and messages from a ReviewInput entity."
+    },
+    {
+      "method": "POST",
+      "path": "/changes/{change-id}/submit",
+      "summary": "Submit change",
+      "description": "Submits a change to the destination branch of its project."
+    },
+    {
+      "method": "POST",
+      "path": "/changes/{change-id}/abandon",
+      "summary": "Abandon change",
+      "description": "Abandons a change; an optional message is posted as a change message."
+    },
+    {
+      "method": "GET",
+      "path": "/config/server/version",
+      "summary": "Get version",
+      "responses": {
+        "200": {
+          "description": "The Gerrit server version string (the default), or a version object with the verbose option. Modeled as a free-form object to avoid an ungenerable oneOf(string, object).",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/config/server/info",
+      "summary": "Get server info",
+      "description": "Returns the public configuration of the Gerrit server as a ServerInfo entity."
+    },
+    {
+      "method": "GET",
+      "path": "/groups",
+      "summary": "List groups",
+      "description": "Lists the internal groups visible to the caller.",
+      "responses": {
+        "default": {
+          "description": "A map of GroupInfo keyed by group name (the default), or an array of GroupInfo under certain query options. Modeled as a free-form object because a oneOf(array, map) does not generate into compiling SDK code.",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/groups/{group-id}",
+      "summary": "Get group",
+      "description": "Retrieves a single group as a GroupInfo entity."
+    },
+    {
+      "method": "GET",
+      "path": "/projects",
+      "summary": "List projects",
+      "description": "Lists the projects accessible by the caller, optionally filtered by prefix, regex, or substring.",
+      "responses": {
+        "default": {
+          "description": "A map of ProjectInfo keyed by project name (the default), or an array of ProjectInfo under certain query options. Modeled as a free-form object because a oneOf(array, map) does not generate into compiling SDK code.",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/projects/{project-id}",
+      "summary": "Get project",
+      "description": "Retrieves a single project as a ProjectInfo entity."
+    },
+    {
+      "method": "PUT",
+      "path": "/projects/{project-id}",
+      "summary": "Create project",
+      "description": "Creates a new project from a ProjectInput entity."
+    },
+    {
+      "method": "GET",
+      "path": "/projects/{project-id}/branches",
+      "summary": "List branches",
+      "description": "Lists the branches of a project as BranchInfo entities."
+    },
+    {
+      "method": "GET",
+      "path": "/changes/{change-id}/reviewers",
+      "summary": "List reviewers",
+      "description": "Lists the reviewers of a change as ReviewerInfo entities."
+    },
+    {
+      "method": "GET",
+      "path": "/changes/{change-id}/comments",
+      "summary": "List change comments",
+      "description": "Lists the published comments of all revisions of a change, grouped by file path."
+    },
+    {
+      "method": "GET",
+      "path": "/changes/{change-id}/messages",
+      "summary": "List change messages",
+      "description": "Lists the messages of a change as ChangeMessageInfo entities."
+    },
+    {
+      "method": "POST",
+      "path": "/changes/{change-id}/rebase",
+      "summary": "Rebase change",
+      "description": "Rebases a change onto a new base, given by a RebaseInput entity."
+    },
+    {
+      "method": "POST",
+      "path": "/changes/{change-id}/move",
+      "summary": "Move change",
+      "description": "Moves a change to another branch, given by a MoveInput entity."
+    },
+    {
+      "method": "POST",
+      "path": "/changes/{change-id}/restore",
+      "summary": "Restore change",
+      "description": "Restores an abandoned change."
+    },
+    {
+      "method": "PUT",
+      "path": "/changes/{change-id}/topic",
+      "summary": "Set topic",
+      "description": "Sets the topic of a change from a TopicInput entity."
+    },
+    {
+      "method": "GET",
+      "path": "/changes/{change-id}/revisions/{revision-id}/commit",
+      "summary": "Get commit",
+      "description": "Retrieves the commit of a revision as a CommitInfo entity."
+    },
+    {
+      "method": "GET",
+      "path": "/changes/{change-id}/revisions/{revision-id}/review",
+      "summary": "Get review",
+      "description": "Retrieves a change with the review-relevant fields (labels, messages) for a revision."
+    },
+    {
+      "method": "GET",
+      "path": "/changes/{change-id}/revisions/{revision-id}/files",
+      "summary": "List files",
+      "description": "Lists the files that were added, modified, or deleted in a revision."
+    },
+    {
+      "method": "GET",
+      "path": "/changes/{change-id}/revisions/{revision-id}/patch",
+      "summary": "Get patch",
+      "description": "Returns the formatted patch of a revision (base64-encoded unless the raw content type is requested)."
+    },
+    {
+      "method": "POST",
+      "path": "/changes/{change-id}/revisions/{revision-id}/rebase",
+      "summary": "Rebase revision",
+      "description": "Rebases a revision onto a new base, given by a RebaseInput entity."
+    },
+    {
+      "method": "POST",
+      "path": "/changes/{change-id}/revisions/{revision-id}/cherrypick",
+      "summary": "Cherry-pick revision",
+      "description": "Cherry-picks a revision to a destination branch, given by a CherryPickInput entity."
+    },
+    {
+      "method": "GET",
+      "path": "/changes/{change-id}/revisions/{revision-id}/related",
+      "summary": "List related changes",
+      "description": "Lists the changes related to a revision by ancestry as a RelatedChangesInfo entity."
+    },
+    {
+      "method": "GET",
+      "path": "/changes/{change-id}/revisions/{revision-id}/mergeable",
+      "summary": "Get mergeable",
+      "description": "Returns whether a revision can be merged into the destination branch as a MergeableInfo entity."
+    },
+    {
+      "method": "GET",
+      "path": "/changes/{change-id}/revisions/{revision-id}/comments",
+      "summary": "List revision comments",
+      "description": "Lists the published comments of a revision, grouped by file path."
+    },
+    {
+      "method": "GET",
+      "path": "/changes/{change-id}/revisions/{revision-id}/drafts",
+      "summary": "List draft comments",
+      "description": "Lists the draft comments of the calling user on a revision, grouped by file path."
+    },
+    {
+      "method": "GET",
+      "path": "/changes/{change-id}/edit",
+      "summary": "Get change edit",
+      "description": "Retrieves the change edit of the calling user, if one exists, as an EditInfo entity."
+    },
+    {
+      "method": "POST",
+      "path": "/changes/{change-id}/revisions/{revision-id}/reviewers/{reviewer-id}/votes/{vote-id}/delete",
+      "summary": "Delete vote",
+      "description": "Deletes a single vote from a revision, given by a DeleteVoteInput entity."
+    },
+    {
+      "method": "POST",
+      "path": "/groups/{group-id}/members",
+      "description": "Adds one or more users as members to a Gerrit internal group."
+    },
+    {
+      "method": "POST",
+      "path": "/groups/{group-id}/groups",
+      "description": "Adds one or more groups as subgroups to a Gerrit internal group."
+    },
+    {
+      "method": "POST",
+      "path": "/accounts/{account-id}/watched.projects",
+      "description": "Add new projects to watch or update existing watched projects. Projects that are already watched by a user will be updated with the provided configuration. All other projects in the request will be watched using the provided configuration. The posted body can contain ProjectWatchInfo entities. Omitted boolean values will be set to false."
+    },
+    {
+      "method": "GET",
+      "path": "/changes/{change-id}/pure_revert",
+      "description": "Check if the given change is a pure revert of the change it references in revertOf. Optionally, the query parameter o can be passed in to specify a commit (SHA-1 in 40 digit hex representation) to check against. It takes precedence over revertOf. If the change has no reference in revertOf, the parameter is mandatory."
+    },
+    {
+      "method": "POST",
+      "path": "/config/server/caches",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "example": {
+              "operation": "FLUSH_ALL"
+            }
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/config/server/caches",
+      "responses": {
+        "200": {
+          "description": "A map of CacheInfo keyed by cache name (the default), or an array of cache names with format=LIST. Modeled as a free-form object because a oneOf(array, map) does not generate into compiling SDK code.",
+          "content": {
+            "application/json": {
+              "schema": {}
+            },
+            "text/plain": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/config/server/indexes",
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "versions": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "is_write": {
+                            "type": "boolean"
+                          },
+                          "is_search": {
+                            "type": "boolean"
+                          },
+                          "num_docs": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

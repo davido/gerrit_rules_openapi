@@ -1,0 +1,291 @@
+{
+  "_comment": "Per-schema required-ness for the Gerrit OpenAPI entities. The emitter writes these into each schema's `required` array so the generated clients mark the fields non-optional. Durable source of truth; maintained here (or promoted to Java annotations later). Seeded once from polygerrit-ui/app/api/rest-api.ts via tools/openapi/py/seed_required_from_polygerrit.py; do not regenerate from rest-api.ts once PolyGerrit consumes the generated models.",
+  "required": {
+    "AccountDetailInfo": [
+      "registered_on"
+    ],
+    "AccountsConfigInfo": [
+      "visibility",
+      "default_display_name"
+    ],
+    "AttentionSetInfo": [
+      "account"
+    ],
+    "AuthInfo": [
+      "auth_type",
+      "editable_account_fields"
+    ],
+    "AvatarInfo": [
+      "url",
+      "height"
+    ],
+    "Base64FileContent": [
+      "content",
+      "type",
+      "ok"
+    ],
+    "ChangeConfigInfo": [
+      "large_change",
+      "update_delay",
+      "mergeability_computation_behavior"
+    ],
+    "ChangeInfo": [
+      "id",
+      "project",
+      "branch",
+      "change_id",
+      "subject",
+      "status",
+      "created",
+      "updated",
+      "insertions",
+      "deletions",
+      "_number",
+      "owner",
+      "reviewers",
+      "current_revision_number"
+    ],
+    "ChangeMessageInfo": [
+      "id",
+      "date",
+      "message"
+    ],
+    "CommentInfo": [
+      "id",
+      "updated"
+    ],
+    "CommentLinkInfo": [
+      "match",
+      "link"
+    ],
+    "CommentRange": [
+      "start_line",
+      "start_character",
+      "end_line",
+      "end_character"
+    ],
+    "CommitInfo": [
+      "parents",
+      "author",
+      "committer",
+      "subject",
+      "message"
+    ],
+    "ConfigArrayParameterInfo": [
+      "type",
+      "values"
+    ],
+    "ConfigInfo": [
+      "private_by_default",
+      "work_in_progress_by_default",
+      "max_object_size_limit",
+      "default_submit_type",
+      "submit_type",
+      "commentlinks",
+      "enable_reviewer_by_email"
+    ],
+    "ConfigListParameterInfo": [
+      "type"
+    ],
+    "ConfigParameterInfoBase": [
+      "type"
+    ],
+    "ContextLine": [
+      "line_number",
+      "context_line"
+    ],
+    "ContributorAgreementInfo": [
+      "name",
+      "description"
+    ],
+    "DownloadInfo": [
+      "schemes",
+      "archives"
+    ],
+    "DownloadSchemeInfo": [
+      "url",
+      "is_auth_required",
+      "is_auth_supported",
+      "commands",
+      "clone_commands"
+    ],
+    "EmailInfo": [
+      "email"
+    ],
+    "FetchInfo": [
+      "url",
+      "ref"
+    ],
+    "FixReplacementInfo": [
+      "path",
+      "range",
+      "replacement"
+    ],
+    "FixSuggestionInfo": [
+      "fix_id",
+      "description",
+      "replacements"
+    ],
+    "FixSuggestionInfoInput": [
+      "description",
+      "replacements"
+    ],
+    "FlowActionInfo": [
+      "name"
+    ],
+    "FlowExpressionInfo": [
+      "condition"
+    ],
+    "FlowInfo": [
+      "uuid",
+      "owner",
+      "created",
+      "stages"
+    ],
+    "FlowInput": [
+      "stage_expressions"
+    ],
+    "FlowStageInfo": [
+      "expression",
+      "state"
+    ],
+    "GerritInfo": [
+      "all_projects",
+      "all_users",
+      "doc_search",
+      "project_state_predicate_enabled"
+    ],
+    "GitPersonInfo": [
+      "name",
+      "email",
+      "date"
+    ],
+    "GroupInfo": [
+      "id"
+    ],
+    "GroupOptionsInfo": [
+      "visible_to_all"
+    ],
+    "InheritedBooleanInfo": [
+      "value",
+      "configured_value"
+    ],
+    "IsFlowsEnabledInfo": [
+      "enabled"
+    ],
+    "LabelDefinitionInfo": [
+      "name",
+      "project_name",
+      "function",
+      "values",
+      "default_value"
+    ],
+    "LabelTypeInfo": [
+      "values",
+      "default_value"
+    ],
+    "MetadataInfo": [
+      "name"
+    ],
+    "ParentCommitInfo": [
+      "commit",
+      "subject"
+    ],
+    "PluginConfigInfo": [
+      "has_avatars",
+      "js_resource_paths"
+    ],
+    "ProblemInfo": [
+      "message"
+    ],
+    "ProjectInfo": [
+      "id"
+    ],
+    "ProjectInfoWithName": [
+      "name"
+    ],
+    "PushCertificateInfo": [
+      "certificate",
+      "key"
+    ],
+    "Requirement": [
+      "status",
+      "fallbackText",
+      "type"
+    ],
+    "ReviewerUpdateInfo": [
+      "updated",
+      "updated_by",
+      "reviewer",
+      "state"
+    ],
+    "RevisionInfo": [
+      "kind",
+      "_number",
+      "created",
+      "uploader",
+      "ref"
+    ],
+    "ServerInfo": [
+      "accounts",
+      "auth",
+      "change",
+      "download",
+      "gerrit",
+      "groups",
+      "plugin",
+      "suggest",
+      "user"
+    ],
+    "SubmitRecordInfo": [
+      "rule_name"
+    ],
+    "SubmitRecordInfoLabel": [
+      "label",
+      "status",
+      "appliedBy"
+    ],
+    "SubmitRequirementExpressionInfo": [
+      "expression"
+    ],
+    "SubmitRequirementInput": [
+      "name",
+      "submittability_expression"
+    ],
+    "SubmitRequirementResultInfo": [
+      "name",
+      "status",
+      "submittability_expression_result"
+    ],
+    "SubmitTypeInfo": [
+      "value",
+      "configured_value",
+      "inherited_value"
+    ],
+    "SuggestInfo": [
+      "from"
+    ],
+    "TrackingIdInfo": [
+      "system",
+      "id"
+    ],
+    "UserConfigInfo": [
+      "anonymous_coward_name"
+    ],
+    "ValidationOptionInfo": [
+      "name",
+      "description"
+    ],
+    "ValidationOptionsInfo": [
+      "validation_options"
+    ],
+    "VotingRangeInfo": [
+      "min",
+      "max"
+    ],
+    "WebLinkInfo": [
+      "name",
+      "url"
+    ]
+  }
+}

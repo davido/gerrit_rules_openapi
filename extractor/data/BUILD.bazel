@@ -1,0 +1,12 @@
+# Data consumed by the generation pipeline: the curated overrides layer and the
+# schema-required allowlist (applied via override_extractor + overrides_compose_tool)
+# and the golden-diff script used by openapi_endpoint_golden_test. Public so a
+# consumer package -- Gerrit core's //openapi and in-tree plugins -- can reference
+# them as pipeline inputs.
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "openapi-overrides.json",
+    "openapi-schema-required.json",
+    "openapi_golden_diff.sh",
+])
