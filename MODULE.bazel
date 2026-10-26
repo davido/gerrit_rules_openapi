@@ -31,6 +31,7 @@ python.toolchain(
 # vendored under extractor/java/com/google/gerrit/common.
 bazel_dep(name = "rules_java", version = "9.9.0")  # match gerrit (JDK 25 toolchains)
 bazel_dep(name = "rules_jvm_external", version = "6.6")
+bazel_dep(name = "rules_shell", version = "0.6.1")  # gate-test helpers in the pipeline rule
 
 maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
 maven.install(
