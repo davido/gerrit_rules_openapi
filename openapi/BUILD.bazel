@@ -22,5 +22,6 @@ exports_files([
     "toolchains.bzl",
     "defs.bzl",
     "generate.bzl",
+    "context.bzl",
     "preview.bzl",
 ])
