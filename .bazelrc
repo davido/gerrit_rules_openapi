@@ -2,3 +2,11 @@ common --enable_bzlmod
 # Keep generation targets out of wildcard selection; they are tagged `manual`.
 # `bazel test //...` still builds+tests the smoke example (not manual).
 test --test_output=errors
+
+# The extractor is gerrit source AND it parses gerrit REST source (which is
+# compiled at Java 25) via the com.sun.source javac AST. The runtime JDK must be
+# >= that source level to parse it faithfully, so match gerrit exactly: JDK 25.
+common --java_language_version=25
+common --java_runtime_version=remotejdk_25
+common --tool_java_language_version=25
+common --tool_java_runtime_version=remotejdk_25

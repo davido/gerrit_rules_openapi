@@ -1,0 +1,41 @@
+load("@rules_java//java:defs.bzl", "java_binary", "java_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# The parse-only OpenAPI extractor + emitter, lifted verbatim from gerrit6
+# java/com/google/gerrit/openapi (no redesign — proposal §5). It reads an
+# explicit --manifest of gerrit REST source-file paths (passed as declared
+# inputs) and parses them with the javac com.sun.source API; it never walks the
+# workspace. Only gson + guava + the vendored @Nullable are needed.
+java_library(
+    name = "inventory_lib",
+    srcs = glob([
+        "com/google/gerrit/openapi/**/*.java",
+        "com/google/gerrit/common/Nullable.java",
+    ]),
+    deps = [
+        "@maven//:com_google_code_gson_gson",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+# Per-endpoint extraction / OpenAPI emission for a set of REST modules.
+java_binary(
+    name = "endpoints",
+    main_class = "com.google.gerrit.openapi.RestEndpoints",
+    runtime_deps = [":inventory_lib"],
+)
+
+# Modules-only REST install-graph inventory.
+java_binary(
+    name = "inventory",
+    main_class = "com.google.gerrit.openapi.RestInventory",
+    runtime_deps = [":inventory_lib"],
+)
+
+# Compose generated + curated overrides (same deepMerge the emitter applies).
+java_binary(
+    name = "overrides_compose_tool",
+    main_class = "com.google.gerrit.openapi.emit.OverridesCompose",
+    runtime_deps = [":inventory_lib"],
+)

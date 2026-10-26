@@ -26,6 +26,22 @@ python.toolchain(
     python_version = "3.11",
 )
 
+# Java extractor backend deps. The extractor is parse-only (reads gerrit REST
+# source files passed as inputs via the javac com.sun.source API), so it needs
+# only gson + guava + the JDK; the single gerrit-internal symbol (@Nullable) is
+# vendored under extractor/java/com/google/gerrit/common.
+bazel_dep(name = "rules_java", version = "9.9.0")  # match gerrit (JDK 25 toolchains)
+bazel_dep(name = "rules_jvm_external", version = "6.6")
+
+maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+maven.install(
+    artifacts = [
+        "com.google.code.gson:gson:2.11.0",
+        "com.google.guava:guava:33.4.0-jre",
+    ],
+)
+use_repo(maven, "maven")
+
 # Register the default (swappable) extractor toolchain. A site or experiment may
 # register its own ahead of this one.
 register_toolchains("//openapi:default_extractor_toolchain")
