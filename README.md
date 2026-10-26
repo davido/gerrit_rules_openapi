@@ -1,60 +1,134 @@
 # gerrit_rules_openapi
 
 Build-time Bazel **ruleset** that extracts an OpenAPI 3.1 document from Gerrit's
-REST bindings (**source → spec**). It is **not** a Gerrit plugin — nothing here
-is loaded at runtime. It is consumed via `bazel_dep` by Gerrit core and by
-plugins built in-tree or standalone.
+REST bindings (**source → spec**). Not a Gerrit plugin — nothing here runs at
+runtime. Gerrit core and plugins consume it via `bazel_dep`.
 
-Direction note: this is the inverse of a client-codegen ruleset like
-[`rules_openapi`](https://github.com/tomato-bazel/rules_openapi) (which goes
-*spec → code*). We borrow that family's provider/toolchain/plugin-contract
-*architecture* (itself from `rules_jsonschema`); we do not depend on it.
+## How it works
 
-See the design: `gerrit6/split-openapi-design-proposal-v2.md` (§5, §6a, §6b).
+Java REST bindings supply the structure (operations, parameters, schema refs) and the
+handwritten REST docs supply the prose (summaries, descriptions, examples); the two are
+composed on the HTTP method + REST path into an OpenAPI 3.1 document at build time, which
+a semantic gate then validates. Plugins run the same pipeline over their own bindings.
+Nothing is hand-edited — the document is a build output.
 
-## Status
+![Gerrit OpenAPI generation pipeline](resources/gerrit-openapi-pipeline.png)
 
-**Skeleton.** The rule/provider/toolchain plumbing is real and tested
-end-to-end; the extractor backend is a deterministic **stand-in**
-(`tools/default_extractor`) so byte-equality can be exercised before the real
-backend is lifted. Replacing the stand-in with the verbatim gerrit6
-`java/.../openapi` + `tools/openapi/py` backend (same CLI/toolchain contract) is
-the substantive next step.
+## What's here
 
-## Public API
+- `openapi/` — public rule facades (`report.bzl`, `generate.bzl`, `defs.bzl`),
+  providers, the extractor toolchain type, and `internal/` implementations.
+- `extractor/java/` — the parse-only AST extractor + OpenAPI emitter (runs at JDK 25).
+- `extractor/py/` — the prose/overrides miner, composer, and stats (stdlib only).
+- `extractor/data/` — curated overrides, schema-required, golden-diff script.
+- `examples/smoke/` — byte-equality + determinism tests.
 
-Loaded by consumers as `@gerrit_rules_openapi//openapi:<file>`:
+## Use it
 
-| Entry point | Symbols | Weight |
-|---|---|---|
-| `defs.bzl` | `openapi_resource_jar` | light — package a committed spec; loads no generation code |
-| `generate.bzl` | `openapi_spec`, `openapi_export`, `openapi_stats`, `openapi_publish` | heavy — runs the extractor toolchain |
-| `preview.bzl` | `openapi_dev_serve` | dev |
-| `providers.bzl` | `GerritOpenApiSpecInfo`, `GerritOpenApiExtractorToolchainInfo` | — |
-| `toolchains.bzl` | `gerrit_openapi_extractor_toolchain` | declare a custom backend |
+The consumer declares the generation pipeline over its own REST source + docs; the
+ruleset only carries the tools. `info.version` is passed in — the ruleset never reads
+the host Gerrit version.
 
-Toolchain type: `//openapi:extractor_toolchain_type` (default registered in
-`MODULE.bazel`, swappable).
+### Depend on the ruleset
 
-## Try it
+It is not in a Bazel registry yet, so pin it with an override in your `MODULE.bazel`
+(the `bazel_dep` version line is required, but the override supplies the real module):
 
-```sh
-bazel test //examples/smoke:spec_matches_golden   # regeneration == committed golden
-bazel build //examples/smoke:resource             # package a committed spec (no generator)
-bazel run   //examples/smoke:export               # runfiles-aware spec locator
+```python
+bazel_dep(name = "gerrit_rules_openapi", version = "1.0.0")
+
+# External consumer: pin a commit from GitHub.
+git_override(
+    module_name = "gerrit_rules_openapi",
+    remote = "https://github.com/davido/gerrit_rules_openapi.git",
+    commit = "<sha>",
+)
+
+# Or, when it is checked out next to your repo (how Gerrit depends on it today):
+# local_path_override(
+#     module_name = "gerrit_rules_openapi",
+#     path = "../gerrit_rules_openapi",
+# )
 ```
 
-Generation targets are tagged `manual`: `bazel build //...` won't select them,
-but an explicit dependency (the test) still builds them — `manual` blocks
-wildcard *selection*, not dependency builds or package *loading*.
+### 1. Core
 
-## Deferred (tracked in the proposal)
+Gerrit core wires the `openapi_endpoint_report` rule directly, once per slice (base,
+merged, per-domain) in `//tools/openapi/BUILD.bazel`. The merged document:
 
-- Public / `internal` split of rule implementations (convention: see local
-  `rules_go_simple/internal`, `rules_sbom/sbom/internal`,
-  `rules_openapi/openapi/private`). Entry-point isolation already holds in the
-  flat layout, so this is API-surface hardening, not a correctness fix.
-- Lift the real extractor + bootstrap the versioned core-context source archive.
+```python
+load("@gerrit_rules_openapi//openapi:report.bzl", "openapi_endpoint_report")
+
+openapi_endpoint_report(
+    name = "openapi_json",                       # merged core document
+    out = "all-domain-openapi.generated.json",
+    format = "openapi",
+    modules = ALL_DOMAIN_MODULES,                # REST binding modules to emit
+    roots = ALL_DOMAIN_ROOTS,                    # source roots the extractor parses
+    overrides = ":openapi_composed_overrides",   # mined + curated prose
+    version = "3.16.0-SNAPSHOT",
+    tags = ["manual"],
+)
+```
+
+```sh
+bazel build //tools/openapi:openapi_json                 # merged OpenAPI 3.1 document
+bazel build //tools/openapi:openapi_<domain>_json        # per-area slice (access, ...)
+bazel test  //tools/openapi:all_domain_openapi_spec_test # semantic gate
+bazel test  //tools/openapi:all_domain_golden_test       # REST-surface drift golden
+```
+
+### 2. Plugin
+
+A Gerrit plugin (e.g. checks) wires the `openapi_plugin_spec` macro — the whole
+base → mine → compose → emit pipeline, plus the semantic gate and an endpoint-inventory
+golden test, in one call:
+
+```python
+load("@gerrit_rules_openapi//openapi:report.bzl", "openapi_plugin_spec")
+
+openapi_plugin_spec(
+    name = "checks_openapi_json",
+    plugin = "checks",
+    modules = ["com.google.gerrit.plugins.checks.api.ApiModule"],
+    roots = [
+        ":checks__plugin",
+        "//java/com/google/gerrit/server/restapi",
+        "//java/com/google/gerrit/httpd",
+        "//java/com/google/gerrit/extensions:api",
+    ],
+    docs = glob(["resources/Documentation/rest-api*.md"]),   # prose mined from here
+    context_modules = ["com.google.gerrit.server.restapi.change.ChangeRestApiModule"],
+    curated_overrides = "openapi-overrides.json",
+    inventory_golden = "testdata/checks-openapi-endpoints.golden.json",
+    version = "3.16.0-SNAPSHOT",
+)
+```
+
+```sh
+bazel build //plugins/checks:checks_openapi_json
+bazel test  //plugins/checks:checks_openapi_json_spec_test   # semantic gate
+```
+
+See [`docs/report.md`](docs/report.md) for every attribute of both.
+
+Core and plugins drive the **same** two entry points above, and everything downstream
+flows from their output — one source of truth for the whole ecosystem: the published
+[gerrit-openapi](https://github.com/davido/gerrit-openapi) spec distribution, the
+per-language [SDKs](https://github.com/davido/gerrit-openapi#generated-sdks) generated
+from it, and the in-Gerrit [Swagger-UI viewer](https://github.com/davido/gerrit-openapi-viewer).
+
+## API reference
+
+Generated Starlark API docs (rendered from the rule docstrings with Stardoc;
+regenerate with `bazelisk run --config=docs //docs:update_docs`):
+
+- [`openapi_endpoint_report`](docs/report.md) — the low-level rule core's `//tools/openapi` drives (base spec, merged spec, per-domain slices).
+- [`openapi_plugin_spec`](docs/report.md) — a plugin's full pipeline in one call.
+- [`openapi_resource_jar`](docs/openapi_resource_jar.md) — package a spec into a plugin jar.
+- [`openapi_dev_serve`](docs/openapi_dev_serve.md) — serve a local Swagger UI preview of the spec.
+- [`core_context_archive`](docs/core_context_archive.md) — deterministic core-context archive.
+- [`providers`](docs/providers.md) — `GerritOpenApiSpecInfo`, extractor toolchain info.
 
 ## License
 
