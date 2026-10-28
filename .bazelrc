@@ -10,3 +10,8 @@ common --java_language_version=25
 common --java_runtime_version=remotejdk_25
 common --tool_java_language_version=25
 common --tool_java_runtime_version=remotejdk_25
+
+# Stardoc's C++/proto renderer needs a newer macOS deployment target to compile
+# against the local SDK. No-op on Linux CI. Used to (re)generate //docs.
+build:docs --host_macos_minimum_os=14.0
+build:docs --macos_minimum_os=14.0

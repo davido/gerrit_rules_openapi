@@ -33,6 +33,12 @@ bazel_dep(name = "rules_java", version = "9.9.0")  # match gerrit (JDK 25 toolch
 bazel_dep(name = "rules_jvm_external", version = "6.6")
 bazel_dep(name = "rules_shell", version = "0.6.1")  # gate-test helpers in the pipeline rule
 
+# Dev-only: Starlark API reference. stardoc renders Markdown from the rule
+# docstrings; write_source_files (aspect_bazel_lib) copies it into docs/. Neither
+# is pulled into a consumer -- both are dev_dependency.
+bazel_dep(name = "aspect_bazel_lib", version = "2.22.5", dev_dependency = True)
+bazel_dep(name = "stardoc", version = "0.8.0", dev_dependency = True)
+
 maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
 maven.install(
     artifacts = [

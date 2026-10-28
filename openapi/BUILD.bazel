@@ -1,3 +1,4 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":toolchains.bzl", "gerrit_openapi_extractor_toolchain")
 
 package(default_visibility = ["//visibility:public"])
@@ -24,4 +25,15 @@ exports_files([
     "generate.bzl",
     "context.bzl",
     "preview.bzl",
+    "report.bzl",
 ])
+
+# Source graph for the Starlark API docs (//docs). One umbrella library covering
+# the public facades and their openapi/internal impls, so stardoc can resolve the
+# re-exported rules. Used only by //docs (dev-only).
+bzl_library(
+    name = "openapi_bzl",
+    srcs = glob(["*.bzl"]),
+    visibility = ["//visibility:public"],
+    deps = ["//openapi/internal:internal_bzl"],
+)

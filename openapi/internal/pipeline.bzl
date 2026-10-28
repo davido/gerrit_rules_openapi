@@ -155,7 +155,14 @@ openapi_endpoint_report = rule(
 )
 
 def openapi_endpoint_golden_test(name, report, golden, **kwargs):
-    """Fails when `report` (a generated inventory) drifts from the checked-in `golden`."""
+    """Fail when `report` (a generated inventory) drifts from the checked-in `golden`.
+
+    Args:
+        name: Test target name.
+        report: Label of the generated endpoint-inventory JSON to check.
+        golden: Label of the checked-in golden JSON it must match byte-for-byte.
+        **kwargs: Extra sh_test attributes (size, tags, visibility, ...).
+    """
     sh_test(
         name = name,
         size = kwargs.pop("size", "small"),
@@ -179,35 +186,55 @@ def openapi_plugin_spec(
         entity_aliases = None,
         context_overrides = None,
         inventory_golden = None):
-    """A plugin's full OpenAPI pipeline in one call -- conceptually identical to the
-    core pipeline in //tools/openapi (base -> mined overrides -> [compose with curated]
-    -> emit), differing only in the doc dialect: plugins ship Markdown (rest-api*.md,
-    which override_extractor auto-detects) where core ships AsciiDoc. No new logic --
-    it wires the same override_extractor + overrides_compose_tool core uses, so a plugin
-    stays a few lines instead of repeating the five-target pipeline.
+    """Generate a plugin's full OpenAPI 3.1 document in one call.
+
+    Conceptually identical to the core pipeline in //tools/openapi (base -> mined
+    overrides -> [compose with curated] -> emit), differing only in the doc dialect:
+    plugins ship Markdown (rest-api*.md, which override_extractor auto-detects) where
+    core ships AsciiDoc. It wires the same override_extractor + overrides_compose_tool
+    core uses, so a plugin stays a few lines instead of repeating the five-target
+    pipeline.
 
     Produces `<name>`: the composed OpenAPI 3.1 document (format = openapi) enriched
     with the plugin's own doc prose (summaries, descriptions, request/response
     examples). Feed it to openapi_resource_jar (package into the jar) and
-    openapi_dev_serve (local viewer).
+    openapi_dev_serve (local viewer). The document itself is a generated, unversioned
+    build output guarded by `<name>_spec_test`.
 
-    Args mirror openapi_endpoint_report (modules / context_modules / roots / src_prefix
-    / plugin_name / plugin / version). `version` is the emitted document's info.version;
-    pass the host Gerrit's version (keep it in sync with core's //tools/openapi VERSION).
-    `docs` are the plugin's rest-api*.md label(s). `plugin` (the
-    install name) both prefixes the plugin's own HttpModule mounts with /plugins/<name>/
-    and expands the @PLUGIN@ doc token, so a plugin-servlet endpoint's spec path and its
-    doc prose line up. `curated_overrides`, when set, is a small hand-authored sidecar
-    (envelope/title + any non-derivable edits) composed over the mined overrides with
-    curated winning per field -- exactly like core's openapi-overrides.json. Omit it to
-    publish the mined prose alone.
-
-    `inventory_golden` is optional. When set to a checked-in `.json` golden, the macro
-    adds a byte-diff `<name>_golden_test` over the plugin's endpoint inventory, so
-    REST-surface drift is reviewable (like core's all_domain_golden_test). The golden
-    records emitted plugin endpoints only -- `context_modules` resolve parent paths but
-    are not emitted. The OpenAPI document itself remains a generated, unversioned build
-    output guarded by `<name>_spec_test`; only the inventory is checked in."""
+    Args:
+        name: Base name; the macro derives its targets from it (`<name>`,
+            `<name>_base`, `<name>_spec_test`, and `<name>_golden_test` when
+            `inventory_golden` is set).
+        modules: REST binding module class name(s) whose endpoints are emitted.
+        roots: Source roots (labels) the extractor parses for the REST bindings and
+            the kinds they reference.
+        docs: The plugin's rest-api*.md doc label(s); their prose (summaries,
+            descriptions, examples) is mined and merged into the spec.
+        version: The emitted document's info.version. Pass the host Gerrit's version
+            and keep it in sync with core's //tools/openapi VERSION.
+        context_modules: Core REST module class name(s) whose kinds resolve the
+            plugin's parent path chains (e.g. change/project), but whose endpoints are
+            NOT emitted. Defaults to `[]`.
+        src_prefix: Package prefix(es) under `roots` to scan. Defaults to
+            `["com/google/gerrit/"]`.
+        plugin_name: Internal plugin name used to qualify the plugin's own view
+            segments that attach onto core kinds. Defaults to `""`.
+        plugin: The plugin install name. Prefixes the plugin's own HttpModule mounts
+            with /plugins/<name>/ and expands the @PLUGIN@ doc token, so a
+            plugin-servlet endpoint's spec path and its prose line up. Defaults to `""`.
+        curated_overrides: Optional hand-authored overrides sidecar (envelope/title +
+            any non-derivable edits) composed over the mined overrides, curated winning
+            per field -- like core's openapi-overrides.json. Omit to publish the mined
+            prose alone.
+        entity_aliases: Optional label mapping a DTO entity name to its documented
+            heading, for entities whose doc heading differs from the class name.
+        context_overrides: Optional label to a parent pipeline's generated-overrides
+            JSON (e.g. core's //tools/openapi output) composed underneath the plugin's
+            own overrides, so shared core entities inherit core prose.
+        inventory_golden: Optional checked-in `.json` golden of the plugin's emitted
+            endpoint inventory. When set, adds a byte-diff `<name>_golden_test` so
+            REST-surface drift is reviewable. Records emitted plugin endpoints only.
+    """
     base = name + "_base"
     generated = name + "_generated_overrides"
 
@@ -333,10 +360,18 @@ def openapi_plugin_spec(
         )
 
 def openapi_json_gate_test(name, script, inputs, **kwargs):
-    """A py_test gate over generated OpenAPI artifacts: `script` is passed each of
-    `inputs` as a $(location) argument, with the same labels as its data. Writing the
-    label list once removes the args/data drift the raw py_test blocks were prone to.
-    Extra kwargs (size, tags, visibility, ...) pass through for plugin/bazlets reuse."""
+    """Run a py_test gate over generated OpenAPI artifacts.
+
+    `script` is passed each of `inputs` as a $(location) argument, with the same
+    labels wired as its data. Writing the label list once removes the args/data drift
+    the raw py_test blocks were prone to.
+
+    Args:
+        name: Test target name.
+        script: Label of the Python test script (used as both srcs and main).
+        inputs: Labels passed to `script` as $(location) args and wired as its data.
+        **kwargs: Extra py_test attributes (size, tags, visibility, ...).
+    """
     py_test(
         name = name,
         srcs = [script],

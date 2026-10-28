@@ -47,6 +47,10 @@ def _dev_serve_impl(ctx):
 openapi_dev_serve = rule(
     implementation = _dev_serve_impl,
     executable = True,
-    attrs = {"spec": attr.label(allow_single_file = [".json"], mandatory = True)},
+    attrs = {"spec": attr.label(
+        allow_single_file = [".json"],
+        mandatory = True,
+        doc = "A committed openapi.json, or a target providing GerritOpenApiSpecInfo.",
+    )},
     doc = "Serve a local Swagger UI preview of the spec (dev-only; the UI assets load from a CDN).",
 )

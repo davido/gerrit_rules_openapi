@@ -2,3 +2,19 @@
 # (via visibility() in each file); consumers load only the public entry points
 # in //openapi (defs.bzl, generate.bzl, context.bzl, preview.bzl, toolchains.bzl,
 # providers.bzl).
+
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+
+# Source grouping for the Starlark API docs only (//docs): lets //openapi:openapi_bzl
+# pull the impl .bzl into the stardoc load graph. Does not relax the load
+# restrictions above -- those stay enforced by visibility() inside each .bzl.
+bzl_library(
+    name = "internal_bzl",
+    srcs = glob(["*.bzl"]),
+    visibility = ["//openapi:__pkg__"],
+    deps = [
+        "@rules_java//java/common",  # java_info.bzl (packaging JavaInfo)
+        "@rules_python//python:defs_bzl",  # python rules in the extractor actions
+        "@rules_shell//shell:rules_bzl",  # sh_test gate helpers in the pipeline
+    ],
+)

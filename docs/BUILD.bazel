@@ -1,0 +1,67 @@
+load("@aspect_bazel_lib//lib:write_source_files.bzl", "write_source_files")
+load("@stardoc//stardoc:stardoc.bzl", "stardoc")
+
+# Generated Starlark API reference (Markdown). stardoc renders into _gen/ and
+# write_source_files copies the results to the checked-in docs/*.md. Regenerate
+# in one invocation with:
+#   bazelisk run --config=docs //docs:update_docs
+# and verify the checked-in files are current with:
+#   bazelisk test --config=docs //docs:update_docs_tests
+# (--config=docs raises the macOS deployment target for stardoc's C++ renderer;
+# it is a no-op on Linux CI.)
+write_source_files(
+    name = "update_docs",
+    files = {
+        "report.md": ":report",
+        "openapi_resource_jar.md": ":defs",
+        "openapi_dev_serve.md": ":preview",
+        "core_context_archive.md": ":context",
+        "providers.md": ":providers",
+    },
+    # Stardoc's renderer needs --config=docs on macOS; keep the docs targets out
+    # of the default `bazel test //...` (smoke + determinism). Regenerate/verify
+    # explicitly with --config=docs.
+    tags = ["manual"],
+)
+
+_DEPS = ["//openapi:openapi_bzl"]
+
+stardoc(
+    name = "report",
+    out = "_gen/report.md",
+    input = "//openapi:report.bzl",
+    tags = ["manual"],
+    deps = _DEPS,
+)
+
+stardoc(
+    name = "defs",
+    out = "_gen/openapi_resource_jar.md",
+    input = "//openapi:defs.bzl",
+    tags = ["manual"],
+    deps = _DEPS,
+)
+
+stardoc(
+    name = "preview",
+    out = "_gen/openapi_dev_serve.md",
+    input = "//openapi:preview.bzl",
+    tags = ["manual"],
+    deps = _DEPS,
+)
+
+stardoc(
+    name = "context",
+    out = "_gen/core_context_archive.md",
+    input = "//openapi:context.bzl",
+    tags = ["manual"],
+    deps = _DEPS,
+)
+
+stardoc(
+    name = "providers",
+    out = "_gen/providers.md",
+    input = "//openapi:providers.bzl",
+    tags = ["manual"],
+    deps = _DEPS,
+)
