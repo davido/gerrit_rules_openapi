@@ -46,6 +46,15 @@ public final class PathAssembler {
   private final Set<String> emitOwnedKinds = new LinkedHashSet<>(); // kinds the emit module defines
   private final String pluginName; // non-empty -> emit the explicit <plugin>~ segment form
 
+  // Kept to disambiguate a binding's leaf kind when its KIND name is reused by multiple resources
+  // (code-owners' PATH_KIND): the binding's view pins the specific resource, which selects the
+  // right
+  // child-edge. For a unique KIND name these are unused -- leafKindId short-circuits to the name.
+  private final SourceIndex index;
+  private final ViewAnalyzer viewAnalyzer;
+  private final ClassInfo module;
+  private final KindIndex kindIndex;
+
   // The /plugins mount is served by HttpPluginServlet, not the normal RestApiServlet: it routes a
   // named view on a plugin resource only when the path segment is prefixed with the owning plugin's
   // namespace (see HttpPluginServlet#isApiCall, which requires parts.get(1).startsWith("gerrit~")).
@@ -81,6 +90,10 @@ public final class PathAssembler {
       List<ModuleBindings> contextEdges,
       String pluginName) {
     this.pluginName = pluginName;
+    this.index = index;
+    this.viewAnalyzer = viewAnalyzer;
+    this.module = module;
+    this.kindIndex = kindIndex;
     // Pass 1: child(PARENT, "seg").to(Collection) edges -> the kind graph. Context modules seed it
     // first (graph only, no endpoints from them); the emit module's edges apply last, staying
     // authoritative for the kinds it defines. With no context modules (the core all-domain run)
@@ -98,10 +111,52 @@ public final class PathAssembler {
     // kind
     // with multiple parents has multiple chains (and thus multiple tops), so resolve each.
     for (Binding b : bindings) {
-      for (List<String> chain : kindChains(b.kind())) {
+      for (List<String> chain : kindChains(leafKindId(b))) {
         roots.computeIfAbsent(chain.get(0), rootResolver::resolveRoot);
       }
     }
+  }
+
+  /**
+   * The graph id of a binding's leaf kind. For a unique KIND name this is the name itself (the
+   * whole of core and checks takes this branch, unchanged). For a name reused by multiple resources
+   * (code-owners' PATH_KIND), the binding's view pins the specific resource, whose id keeps the
+   * three distinct in the edge graph.
+   */
+  private String leafKindId(Binding b) {
+    if (!kindIndex.isColliding(b.kind())) {
+      return b.kind();
+    }
+    ClassInfo view = index.resolveClass(b.viewSimpleName(), module);
+    if (view != null) {
+      ClassInfo res = viewResource(view);
+      if (res != null) {
+        String id = kindIndex.graphIdOfResource(res);
+        if (id != null) {
+          return id;
+        }
+      }
+    }
+    return b.kind();
+  }
+
+  /** The resource a view acts on: the first type arg of its {@code RestView} interface. */
+  @Nullable
+  private ClassInfo viewResource(ClassInfo view) {
+    Map<String, List<String>> ifaces = viewAnalyzer.analyze(view).viewIfaces();
+    for (String iface :
+        List.of(
+            "RestReadView",
+            "RestModifyView",
+            "RestCollectionCreateView",
+            "RestCollectionModifyView",
+            "RestCollectionView")) {
+      List<String> args = ifaces.get(iface);
+      if (args != null && !args.isEmpty()) {
+        return index.resolveClass(args.get(0), view);
+      }
+    }
+    return null;
   }
 
   private void addChildEdges(
@@ -146,7 +201,7 @@ public final class PathAssembler {
    */
   public List<Map<String, Object>> pathVariants(Binding b) {
     List<Map<String, Object>> variants = new ArrayList<>();
-    for (List<String> kindChain : kindChains(b.kind())) {
+    for (List<String> kindChain : kindChains(leafKindId(b))) {
       Map<String, Object> row = new LinkedHashMap<>();
       row.put("http_method", httpMethod(b.verb()));
       fillPathFields(b, kindChain, row);
@@ -162,11 +217,12 @@ public final class PathAssembler {
         b.verb().equals("postOnCollection") || b.verb().equals("deleteOnCollection");
     List<String> segments = new ArrayList<>();
     for (int i = 1; i < kindChain.size(); i++) {
-      String k = kindChain.get(i);
-      segments.add(namespaced(segmentFor(k, kindChain.get(i - 1)), kindChain.get(i - 1)));
+      String k = kindChain.get(i); // graph id (bare name, except code-owners' reused PATH_KIND)
+      String parent = kindChain.get(i - 1);
+      segments.add(namespaced(segmentFor(k, parent), kindIndex.displayName(parent)));
       boolean isLeaf = i == kindChain.size() - 1;
       if (!(isLeaf && collectionOp)) {
-        segments.add("{" + AstUtil.idParam(k) + "}");
+        segments.add("{" + AstUtil.idParam(kindIndex.displayName(k)) + "}");
       }
     }
     // "/" is the DSL sentinel for the resource/self view, not a path segment.
@@ -185,10 +241,17 @@ public final class PathAssembler {
     if (resolved) {
       root = rootCollectionOp ? itemMount.substring(0, itemMount.lastIndexOf('/')) : itemMount;
     } else {
-      root = "{" + kindChain.get(0) + (rootCollectionOp ? "-collection}" : "-root}");
+      root =
+          "{"
+              + kindIndex.displayName(kindChain.get(0))
+              + (rootCollectionOp ? "-collection}" : "-root}");
     }
     row.put("path_template", root + (rel.isEmpty() ? "" : "/" + rel));
-    row.put("resource_kind_chain", kindChain);
+    List<String> displayChain = new ArrayList<>();
+    for (String k : kindChain) {
+      displayChain.add(kindIndex.displayName(k));
+    }
+    row.put("resource_kind_chain", displayChain);
     row.put("path_confidence", resolved ? "high" : "medium");
     row.put("unresolved_path_reason", resolved ? null : "absolute mount of top kind not resolved");
   }
@@ -203,7 +266,7 @@ public final class PathAssembler {
     }
     // e.g. child resource TaskResource, AccountResource.Email
     ClassInfo res = index.resolveClass(args.get(1), coll);
-    return res != null ? kindIndex.kindOfResource(res) : null;
+    return res != null ? kindIndex.graphIdOfResource(res) : null;
   }
 
   /**

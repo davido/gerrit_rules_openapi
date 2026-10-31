@@ -20,7 +20,9 @@ import com.sun.source.tree.ParameterizedTypeTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 
 /**
@@ -40,6 +42,16 @@ public final class KindIndex {
   private final Map<String, ClassInfo> kindToResource = new LinkedHashMap<>();
   private final Map<ClassInfo, String> resourceToKind = new LinkedHashMap<>();
 
+  // A KIND *name* (e.g. PATH_KIND) declared by more than one distinct resource is NOT a unique
+  // identity: code-owners reuses PATH_KIND in three nested PathResource classes. For such names the
+  // kind-graph must key by the resource (unique) instead of the bare name, or the three collapse
+  // into one and all but one path is dropped. Names declared by exactly one resource (all of core,
+  // all of checks) are untouched -- their graph id stays the bare name, so their output is
+  // identical.
+  private final Set<String> collidingNames = new LinkedHashSet<>();
+  private final Map<String, String> graphIdToDisplay =
+      new LinkedHashMap<>(); // resource fqcn -> name
+
   public KindIndex(
       Map<String, ClassInfo> byFqcn, BiFunction<String, ClassInfo, ClassInfo> resolveClass) {
     for (ClassInfo ci : byFqcn.values()) {
@@ -58,6 +70,53 @@ public final class KindIndex {
         }
       }
     }
+    Map<String, Integer> nameCounts = new LinkedHashMap<>();
+    for (String kn : resourceToKind.values()) {
+      nameCounts.merge(kn, 1, Integer::sum);
+    }
+    nameCounts.forEach(
+        (name, count) -> {
+          if (count > 1) {
+            collidingNames.add(name);
+          }
+        });
+    resourceToKind.forEach(
+        (res, name) -> {
+          if (collidingNames.contains(name)) {
+            graphIdToDisplay.put(res.fqcn, name);
+          }
+        });
+  }
+
+  /**
+   * The kind-graph identity for a resource: the bare KIND name when that name is globally unique
+   * (every core and checks kind), or the resource's FQCN when the name is reused by multiple
+   * resources (code-owners' three {@code PATH_KIND}s). The latter keeps the three distinct in the
+   * child-edge graph so their item views emit under their own parent paths.
+   */
+  @Nullable
+  String graphIdOfResource(ClassInfo res) {
+    String name = resourceToKind.get(res);
+    if (name == null) {
+      return null;
+    }
+    return collidingNames.contains(name) ? res.fqcn : name;
+  }
+
+  /**
+   * Whether this KIND name is reused by more than one resource (needs resource-level
+   * disambiguation).
+   */
+  boolean isColliding(String kindName) {
+    return collidingNames.contains(kindName);
+  }
+
+  /**
+   * The display KIND name for a graph id: the bare name for a unique kind; the reused name
+   * otherwise.
+   */
+  String displayName(String graphId) {
+    return graphIdToDisplay.getOrDefault(graphId, graphId);
   }
 
   /** The resource class a top-level kind maps to (for absolute-root resolution). */
