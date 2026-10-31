@@ -25,6 +25,9 @@ import doc_common as dc
 
 VERB = re.compile(r"^\s*'(GET|PUT|POST|DELETE|HEAD)\s+(/[^']*)'")
 HEADING = re.compile(r"^====?\s+(.*)$")
+# The AsciiDoc document title is the level-0 header: a single `= ` (HEADING above only
+# matches the level-3/4 `===`/`====` section headers).
+DOC_TITLE = re.compile(r"^=\s+(\S.*)$")
 BLOCK = re.compile(r"^\.(Request|Response)\b")
 # Any CamelCase heading is a potential entity. We do NOT require an Info/Input
 # suffix: entities like ReviewResult, FileChange, SubmitRecord, Requirement and
@@ -69,6 +72,14 @@ def parse_file(lines, base, state):
             i += 1
             continue
         if in_literal:  # never read headings/verbs inside a listing block
+            i += 1
+            continue
+        dt = DOC_TITLE.match(line)
+        if dt:
+            # Document envelope: the level-0 `= Title` line and the lead paragraph after
+            # it (mined defaults the compose() step layers under the curated overrides).
+            dc.record_doc_title(dc.clean_text(dt.group(1)), state)
+            dc.record_doc_description(lines, i, state, ("", "--"), STOPS, lstrip=False)
             i += 1
             continue
         h = HEADING.match(line)

@@ -38,6 +38,8 @@ class ParseState:
     duplicate_sections: list = field(default_factory=list)  # >1 section for one (method, path)
     entity_fields: dict = field(default_factory=dict)  # {Entity: {field: description}}
     entity_required: dict = field(default_factory=dict)  # {Entity: [required field, ...]}
+    doc_title: str = ""  # document title heading (first file's H1 wins)
+    doc_description: str = ""  # lead intro paragraph after the title (first wins)
 
 
 def canon(path):
@@ -333,6 +335,36 @@ def grab_description(lines, i, state, current, blank_skip, stops, lstrip):
     desc = trim(clean_text(" ".join(para)))
     if desc and desc not in ("OR", "AND") and not state.records[current]["description"]:
         state.records[current]["description"] = desc
+
+
+def record_doc_title(title, state):
+    """The document's title heading (first non-empty wins across the file manifest)."""
+    title = (title or "").strip()
+    if title and not state.doc_title:
+        state.doc_title = title
+
+
+def record_doc_description(lines, i, state, blank_skip, stops, lstrip):
+    """The lead prose paragraph after the document title at index ``i`` (first wins).
+    Mirrors ``grab_description`` but fills the document-level envelope rather than an
+    endpoint record: ``stops`` are the dialect's structural prefixes, ``lstrip``
+    matches them after leading whitespace (Markdown) or against the raw line
+    (AsciiDoc)."""
+    if state.doc_description:
+        return
+    j = i + 1
+    while j < len(lines) and lines[j].strip() in blank_skip:
+        j += 1
+    para = []
+    while j < len(lines) and lines[j].strip():
+        probe = lines[j].lstrip() if lstrip else lines[j]
+        if probe.startswith(stops):
+            break
+        para.append(lines[j])
+        j += 1
+    desc = trim(clean_text(" ".join(para)))
+    if desc:
+        state.doc_description = desc
 
 
 def read_block(lines, start, is_end):

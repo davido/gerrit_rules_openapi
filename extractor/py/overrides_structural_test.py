@@ -37,10 +37,33 @@ def main():
     base = json.load(open(sys.argv[2], encoding="utf-8"))
     errors = []
 
-    allowed = {"operations", "components"}
+    allowed = {"operations", "components", "info", "tags"}
     extra = [k for k in gen if k not in allowed]
     if extra or "operations" not in gen:
         errors.append(f"top-level keys {list(gen.keys())} not within {sorted(allowed)}")
+
+    # info (mined document envelope): an object whose title/description, if present, are
+    # strings -- the compose() step layers it under the curated overrides.
+    info = gen.get("info")
+    if info is not None:
+        if not isinstance(info, dict):
+            errors.append("info must be an object")
+        else:
+            for k in ("title", "description"):
+                if k in info and not (isinstance(info[k], str) and info[k]):
+                    errors.append(f"info.{k} must be a non-empty string")
+
+    # tags (mined tag definitions): an array of {name, description?} objects.
+    tags = gen.get("tags")
+    if tags is not None:
+        if not isinstance(tags, list):
+            errors.append("tags must be an array")
+        else:
+            for n, tag in enumerate(tags):
+                if not isinstance(tag, dict) or not isinstance(tag.get("name"), str):
+                    errors.append(f"tags[{n}] must be an object with a string 'name'")
+                elif "description" in tag and not isinstance(tag["description"], str):
+                    errors.append(f"tags[{n}].description must be a string")
 
     # components (mined schema field descriptions): {schemas: {Entity: {properties:
     # {field: {description: str}}}}} -- an additive, well-formed OpenAPI fragment.

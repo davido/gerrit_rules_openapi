@@ -86,6 +86,43 @@ public final class Overrides {
           "responses",
           "requestBody");
 
+  // The canonical Gerrit REST auth envelope. Every Gerrit OpenAPI document -- core and every
+  // plugin -- authenticates identically (HTTP basic auth with a generated password), so the
+  // security scheme and the global requirement are defaulted here rather than copy-pasted into
+  // each curated overrides file. A curated document may still override either by declaring its
+  // own non-empty securitySchemes/security.
+  private static final Map<String, Object> DEFAULT_SECURITY_SCHEMES = defaultSecuritySchemes();
+  private static final List<Object> DEFAULT_SECURITY = List.of(Map.of("basicAuth", List.of()));
+
+  private static Map<String, Object> defaultSecuritySchemes() {
+    Map<String, Object> basic = new LinkedHashMap<>();
+    basic.put("type", "http");
+    basic.put("scheme", "basic");
+    basic.put("description", "HTTP basic auth with a username and a generated HTTP password.");
+    return Map.of("basicAuth", basic);
+  }
+
+  // The canonical Gerrit server list: the authenticated (/a) base and the anonymous base, both
+  // against the same {host}. Identical for every plugin document, so it is defaulted here rather
+  // than copy-pasted; a curated document (e.g. core, which orders them the other way) may still
+  // declare its own non-empty servers to override.
+  private static final List<Object> DEFAULT_SERVERS =
+      List.of(
+          defaultServer("https://{host}/a", "Authenticated endpoints (HTTP basic auth)."),
+          defaultServer("https://{host}", "Anonymously accessible endpoints."));
+
+  private static Map<String, Object> defaultServer(String url, String description) {
+    Map<String, Object> host = new LinkedHashMap<>();
+    host.put("default", "gerrit-review.googlesource.com");
+    Map<String, Object> variables = new LinkedHashMap<>();
+    variables.put("host", host);
+    Map<String, Object> server = new LinkedHashMap<>();
+    server.put("url", url);
+    server.put("description", description);
+    server.put("variables", variables);
+    return server;
+  }
+
   // LONG_OR_DOUBLE keeps integers as Long (not 1.0), so numeric metadata round-trips through
   // JsonWriter as JSON literals; parsed objects are ordered LinkedTreeMaps.
   private static final Gson GSON =
@@ -254,14 +291,22 @@ public final class Overrides {
     return mapMember("info");
   }
 
-  /** Top-level {@code servers} array (authored — the API base URLs). */
+  /**
+   * Top-level {@code servers} array (the API base URLs). Falls back to the canonical Gerrit default
+   * (authenticated {@code /a} + anonymous base) when the document does not declare its own.
+   */
   public List<Object> servers() {
-    return listMember("servers");
+    List<Object> authored = listMember("servers");
+    return authored.isEmpty() ? DEFAULT_SERVERS : authored;
   }
 
-  /** Top-level {@code security} array (the global security requirement). */
+  /**
+   * Top-level {@code security} array (the global security requirement). Falls back to the canonical
+   * Gerrit default (HTTP basic auth) when the document does not declare its own.
+   */
   public List<Object> security() {
-    return listMember("security");
+    List<Object> authored = listMember("security");
+    return authored.isEmpty() ? DEFAULT_SECURITY : authored;
   }
 
   /** Top-level {@code tags} array (tag definitions with descriptions). */
@@ -269,9 +314,13 @@ public final class Overrides {
     return listMember("tags");
   }
 
-  /** Authored {@code components/securitySchemes} object. */
+  /**
+   * {@code components/securitySchemes} object. Falls back to the canonical Gerrit default ({@code
+   * basicAuth}) when the document does not declare its own.
+   */
   public Map<String, Object> securitySchemes() {
-    return mapMember("securitySchemes");
+    Map<String, Object> authored = mapMember("securitySchemes");
+    return authored.isEmpty() ? DEFAULT_SECURITY_SCHEMES : authored;
   }
 
   /** The {@code "<method> <path>"} keys this sidecar declares operation overrides for. */
@@ -448,9 +497,27 @@ public final class Overrides {
 
     Map<String, Object> out = new LinkedHashMap<>();
     for (Map.Entry<String, Object> e : curated.entrySet()) {
-      if (!e.getKey().equals("operations") && !e.getKey().equals("components")) {
-        out.put(e.getKey(), e.getValue()); // envelope from curated
+      String k = e.getKey();
+      if (k.equals("operations") || k.equals("components")) {
+        continue;
       }
+      if (k.equals("info")) {
+        // info: the mined (generated) layer is the base, curated overrides per field --
+        // the same precedence as operations/components, so the docs supply the document
+        // description by default while a curated file still wins any field it sets.
+        out.put("info", mergeInfo(generated.get("info"), e.getValue()));
+      } else if (k.equals("tags")) {
+        out.put("tags", e.getValue()); // curated tags win entirely when present
+      } else {
+        out.put(k, e.getValue()); // servers/security/securitySchemes envelope from curated
+      }
+    }
+    // info/tags the curated layer omits: fall back to the mined (generated) layer.
+    if (!curated.containsKey("info") && generated.get("info") != null) {
+      out.put("info", generated.get("info"));
+    }
+    if (!curated.containsKey("tags") && generated.get("tags") != null) {
+      out.put("tags", generated.get("tags"));
     }
     out.put("operations", merged);
     // components (mined schema field descriptions) come from generated; a curated components
@@ -464,6 +531,15 @@ public final class Overrides {
 
   @SuppressWarnings("unchecked")
   private static Object mergeComponents(Object generated, Object curated) {
+    if (generated instanceof Map<?, ?> g && curated instanceof Map<?, ?> c) {
+      return deepMerge((Map<String, Object>) g, c);
+    }
+    return curated != null ? curated : generated;
+  }
+
+  /** Merge the mined {@code info} (base) with the curated {@code info} (wins per field). */
+  @SuppressWarnings("unchecked")
+  private static Object mergeInfo(Object generated, Object curated) {
     if (generated instanceof Map<?, ?> g && curated instanceof Map<?, ?> c) {
       return deepMerge((Map<String, Object>) g, c);
     }

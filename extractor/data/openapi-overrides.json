@@ -27,18 +27,6 @@
       }
     }
   ],
-  "securitySchemes": {
-    "basicAuth": {
-      "type": "http",
-      "scheme": "basic",
-      "description": "HTTP basic auth with a username and a generated HTTP password."
-    }
-  },
-  "security": [
-    {
-      "basicAuth": []
-    }
-  ],
   "tags": [
     {
       "name": "access",

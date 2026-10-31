@@ -122,7 +122,9 @@ def main():
         doc_paths = glob.glob(args.docs)
     if not doc_paths:
         sys.exit("no docs to read")
-    records, skipped, dupes, entity_fields, _ = parse_docs(doc_paths, args.doc_format, args.plugin)
+    records, skipped, dupes, entity_fields, _, doc_title, doc_description = parse_docs(
+        doc_paths, args.doc_format, args.plugin
+    )
     # Propagate base-entity field descriptions to subtypes documented as "has the
     # same fields as <Base>" (the docs table only their extras; the spec is flat).
     apply_inherited_fields(entity_fields)
@@ -166,12 +168,25 @@ def main():
         name: {"properties": {fld: {"description": desc} for fld, desc in sorted(fields.items())}}
         for name, fields in sorted(entity_fields.items())
     }
-    out_doc = {"operations": ops}
+    # Document envelope mined from the docs (the default the compose() step layers under
+    # the curated overrides). We emit only `description`: the title heading in the Gerrit
+    # rest-api docs is a bare "REST API" / path fragment, and core's emit-param title has
+    # no curated title to override a mined one, so emitting a mined title would change
+    # core's output. The mined title is reported below for visibility, not emitted.
+    info = {}
+    if doc_description:
+        info["description"] = doc_description
+    out_doc = {}
+    if info:
+        out_doc["info"] = info
+    out_doc["operations"] = ops
     if schemas:
         out_doc["components"] = {"schemas": schemas}
     with open(args.out, "w", encoding="utf-8") as f:
         json.dump(out_doc, f, indent=2)
         f.write("\n")
+    print(f"mined doc title: {doc_title!r}", file=sys.stderr)
+    print(f"mined doc description: {doc_description!r}", file=sys.stderr)
 
     total = len(facts)
     with_summary = sum(1 for o in ops if o.get("summary"))

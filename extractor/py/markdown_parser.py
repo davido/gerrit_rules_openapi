@@ -62,6 +62,12 @@ def parse_file(lines, base, state):
         if h:
             title = htext
             current = None
+            # Document envelope: the first level-1 heading is the doc title and the lead
+            # paragraph after it is the doc description (mined defaults the compose() step
+            # layers under the curated overrides).
+            if line.lstrip().startswith("# "):
+                dc.record_doc_title(htext, state)
+                dc.record_doc_description(lines, i, state, ("",), STOPS, lstrip=True)
             em = ENTITY.match(htext)
             entity = em.group(1) if em else None
             i += 1

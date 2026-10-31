@@ -60,4 +60,6 @@ def parse_docs(paths, doc_format="auto", plugin=None):
         state.duplicate_sections,
         state.entity_fields,
         state.entity_required,
+        state.doc_title,
+        state.doc_description,
     )
