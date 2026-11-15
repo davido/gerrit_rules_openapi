@@ -341,23 +341,14 @@ def openapi_plugin_spec(
         scope = plugin_scope,
         version = version,
     )
-    openapi_json_gate_test(
-        name = name + "_spec_test",
-        script = "@gerrit_rules_openapi//extractor/py:openapi_spec_validator.py",
-        inputs = [":" + name, ":" + name + "_inventory"],
-    )
 
-    # (5) Optional REST-surface drift golden. The OpenAPI document itself stays a
-    # generated build output; this byte-diffs the plugin's *endpoint inventory* (emitted
-    # endpoints only -- context_modules resolve parent paths but are not emitted) against
-    # a checked-in golden, so plugin REST-surface changes surface as reviewable golden
-    # diffs. Regenerate the golden from :<name>_inventory after an intended REST change.
-    if inventory_golden:
-        openapi_endpoint_golden_test(
-            name = name + "_golden_test",
-            golden = inventory_golden,
-            report = ":" + name + "_inventory",
-        )
+    # (5) Spec-validation gate, plus the drift golden when inventory_golden is set.
+    openapi_spec_tests(
+        name = name,
+        spec = ":" + name,
+        inventory = ":" + name + "_inventory",
+        golden = inventory_golden,
+    )
 
 def openapi_json_gate_test(name, script, inputs, **kwargs):
     """Run a py_test gate over generated OpenAPI artifacts.
@@ -380,3 +371,32 @@ def openapi_json_gate_test(name, script, inputs, **kwargs):
         data = inputs,
         **kwargs
     )
+
+def openapi_spec_tests(name, spec, inventory, golden = None, **kwargs):
+    """Wire the spec-validation gate and the optional endpoint-drift golden.
+
+    Produces `<name>_spec_test` (the semantic gate, which also checks the
+    document's operations equal `inventory`) and, when `golden` is set,
+    `<name>_golden_test` (byte-diffs `inventory` against the checked-in golden).
+    Core and the plugin pipeline both call this.
+
+    Args:
+        name: Prefix for the generated test targets.
+        spec: Label of the composed OpenAPI document.
+        inventory: Label of the endpoint-inventory report.
+        golden: Checked-in inventory golden. Omit to skip the drift test.
+        **kwargs: Extra test attributes (tags, visibility, ...).
+    """
+    openapi_json_gate_test(
+        name = name + "_spec_test",
+        script = "@gerrit_rules_openapi//extractor/py:openapi_spec_validator.py",
+        inputs = [spec, inventory],
+        **kwargs
+    )
+    if golden:
+        openapi_endpoint_golden_test(
+            name = name + "_golden_test",
+            golden = golden,
+            report = inventory,
+            **kwargs
+        )

@@ -15,9 +15,11 @@ load(
     _openapi_endpoint_report = "openapi_endpoint_report",
     _openapi_json_gate_test = "openapi_json_gate_test",
     _openapi_plugin_spec = "openapi_plugin_spec",
+    _openapi_spec_tests = "openapi_spec_tests",
 )
 
 openapi_endpoint_report = _openapi_endpoint_report
 openapi_plugin_spec = _openapi_plugin_spec
 openapi_endpoint_golden_test = _openapi_endpoint_golden_test
 openapi_json_gate_test = _openapi_json_gate_test
+openapi_spec_tests = _openapi_spec_tests
