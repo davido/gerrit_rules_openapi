@@ -89,12 +89,14 @@ def attn(n):
 AREA_METHODS = ("GET", "POST", "PUT", "DELETE")
 
 
-def area_counts(paths):
-    """Per-area (OpenAPI tag) counts: for each tag, operations, per-method counts, and
-    the share carrying both a summary and a description (the endpoint-drift guard's
-    notion). Shared by the terminal breakdown and the machine-readable --json output."""
+def area_counts(paths, undocumented):
+    """Per-area (OpenAPI tag) counts: for each tag, operations, per-method counts,
+    and the share with mined documentation. `undocumented` is the set of
+    (method, path) the miner found no doc section for, so the per-area coverage
+    matches the headline instead of counting compose-time fallback summaries.
+    Shared by the terminal breakdown and the machine-readable --json output."""
     areas = collections.defaultdict(collections.Counter)
-    for node in paths.values():
+    for path, node in paths.items():
         for method, op in node.items():
             if method not in METHODS:
                 continue
@@ -102,7 +104,7 @@ def area_counts(paths):
                 c = areas[tag]
                 c["ops"] += 1
                 c[method.upper()] += 1
-                if op.get("summary") and op.get("description"):
+                if (method.lower(), path) not in undocumented:
                     c["documented"] += 1
     return areas
 
@@ -168,7 +170,10 @@ def main():
     }
     fields = sum(len(s.get("properties") or {}) for s in schemas.values())
     enums = sum(1 for s in schemas.values() if s.get("enum"))
-    areas = area_counts(paths)
+    undocumented = {
+        (u["method"].lower(), u["path"]) for u in report.get("undocumented_operations", [])
+    }
+    areas = area_counts(paths, undocumented)
 
     if args.json:
         # The canonical machine artifact: exactly the numbers rendered below, so the

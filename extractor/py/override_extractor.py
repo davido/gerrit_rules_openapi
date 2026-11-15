@@ -191,12 +191,25 @@ def main():
     total = len(facts)
     with_summary = sum(1 for o in ops if o.get("summary"))
     with_example = sum(1 for o in ops if "requestBody" in o or "responses" in o)
+    # Spec operations that got no mined summary. Reported so the per-area
+    # breakdown counts the same coverage the headline does (a fallback summary
+    # layered in at compose time would otherwise make every area read 100%).
+    mined = {(o["method"].lower(), canon(o["path"])) for o in ops if o.get("summary")}
+    undocumented = sorted(
+        (
+            {"method": m.upper(), "path": f["path"]}
+            for (m, ck), f in facts.items()
+            if (m, ck) not in mined
+        ),
+        key=lambda u: (u["path"], u["method"]),
+    )
     report = {
         "spec_operations": total,
         "generated_entries": len(ops),
         "with_summary": with_summary,
         "with_example": with_example,
         "coverage_pct": round(100 * with_summary / total, 1) if total else 0,
+        "undocumented_operations": undocumented,
         "unmatched_doc_sections": sorted(unmatched, key=lambda u: u["endpoint"]),
         "skipped_examples": skipped,
         "dropped_request_examples": diag["dropped_request_examples"],
