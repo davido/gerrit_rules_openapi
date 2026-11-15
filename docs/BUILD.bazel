@@ -14,8 +14,6 @@ write_source_files(
     files = {
         "report.md": ":report",
         "openapi_resource_jar.md": ":defs",
-        "openapi_dev_serve.md": ":preview",
-        "core_context_archive.md": ":context",
         "providers.md": ":providers",
     },
     # Stardoc's renderer needs --config=docs on macOS; keep the docs targets out
@@ -38,22 +36,6 @@ stardoc(
     name = "defs",
     out = "_gen/openapi_resource_jar.md",
     input = "//openapi:defs.bzl",
-    tags = ["manual"],
-    deps = _DEPS,
-)
-
-stardoc(
-    name = "preview",
-    out = "_gen/openapi_dev_serve.md",
-    input = "//openapi:preview.bzl",
-    tags = ["manual"],
-    deps = _DEPS,
-)
-
-stardoc(
-    name = "context",
-    out = "_gen/core_context_archive.md",
-    input = "//openapi:context.bzl",
     tags = ["manual"],
     deps = _DEPS,
 )

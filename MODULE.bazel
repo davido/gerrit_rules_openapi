@@ -12,10 +12,8 @@ module(
 
 bazel_dep(name = "bazel_skylib", version = "1.8.2")
 
-# The default extractor backend is a program (Python today, Java+Python in the
-# real lift). rules_python is a NORMAL dep: a consumer that only packages a
-# committed spec via //openapi:defs.bzl never instantiates openapi_spec, so the
-# extractor action — and this toolchain — are never built for that consumer.
+# The prose/overrides miner and the spec validator are Python (py_binary/py_test
+# in the generation pipeline), so rules_python is a normal dep.
 bazel_dep(name = "rules_python", version = "1.7.0")
 
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
@@ -46,7 +44,3 @@ maven.install(
     ],
 )
 use_repo(maven, "maven")
-
-# Register the default (swappable) extractor toolchain. A site or experiment may
-# register its own ahead of this one.
-register_toolchains("//openapi:default_extractor_toolchain")

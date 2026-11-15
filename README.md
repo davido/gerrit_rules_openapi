@@ -16,12 +16,11 @@ Nothing is hand-edited — the document is a build output.
 
 ## What's here
 
-- `openapi/` — public rule facades (`report.bzl`, `generate.bzl`, `defs.bzl`),
-  providers, the extractor toolchain type, and `internal/` implementations.
+- `openapi/` — public rule facades (`report.bzl`, `defs.bzl`), providers, and
+  `internal/` implementations.
 - `extractor/java/` — the parse-only AST extractor + OpenAPI emitter (runs at JDK 25).
 - `extractor/py/` — the prose/overrides miner, composer, and stats (stdlib only).
 - `extractor/data/` — curated overrides, schema-required, golden-diff script.
-- `examples/smoke/` — byte-equality + determinism tests.
 
 ## Use it
 
@@ -126,9 +125,7 @@ regenerate with `bazelisk run --config=docs //docs:update_docs`):
 - [`openapi_endpoint_report`](docs/report.md) — the low-level rule core's `//tools/openapi` drives (base spec, merged spec, per-domain slices).
 - [`openapi_plugin_spec`](docs/report.md) — a plugin's full pipeline in one call.
 - [`openapi_resource_jar`](docs/openapi_resource_jar.md) — package a spec into a plugin jar.
-- [`openapi_dev_serve`](docs/openapi_dev_serve.md) — serve a local Swagger UI preview of the spec.
-- [`core_context_archive`](docs/core_context_archive.md) — deterministic core-context archive.
-- [`providers`](docs/providers.md) — `GerritOpenApiSpecInfo`, extractor toolchain info.
+- [`providers`](docs/providers.md) — `GerritOpenApiSpecInfo`.
 
 ## License
 

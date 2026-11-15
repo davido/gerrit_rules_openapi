@@ -197,9 +197,9 @@ def openapi_plugin_spec(
 
     Produces `<name>`: the composed OpenAPI 3.1 document (format = openapi) enriched
     with the plugin's own doc prose (summaries, descriptions, request/response
-    examples). Feed it to openapi_resource_jar (package into the jar) and
-    openapi_dev_serve (local viewer). The document itself is a generated, unversioned
-    build output guarded by `<name>_spec_test`.
+    examples). Feed it to openapi_resource_jar (package into the jar). The
+    document itself is a generated, unversioned build output guarded by
+    `<name>_spec_test`.
 
     Args:
         name: Base name; the macro derives its targets from it (`<name>`,

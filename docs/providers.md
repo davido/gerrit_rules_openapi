@@ -2,28 +2,7 @@
 
 Providers exposed by gerrit_rules_openapi.
 
-The design mirrors rules_openapi / rules_jsonschema in *shape* (a small
-toolchain provider + a typed artifact provider), but inverts the direction:
-ours produces a spec from source; theirs consumes a spec to produce code.
-
-<a id="GerritOpenApiExtractorToolchainInfo"></a>
-
-## GerritOpenApiExtractorToolchainInfo
-
-<pre>
-load("@gerrit_rules_openapi//openapi:providers.bzl", "GerritOpenApiExtractorToolchainInfo")
-
-GerritOpenApiExtractorToolchainInfo(<a href="#GerritOpenApiExtractorToolchainInfo-tool">tool</a>)
-</pre>
-
-A source -> OpenAPI extractor backend.
-
-**FIELDS**
-
-| Name  | Description |
-| :------------- | :------------- |
-| <a id="GerritOpenApiExtractorToolchainInfo-tool"></a>tool |  FilesToRunProvider: the extractor executable plus its runfiles.    |
-
+A typed artifact provider carrying a generated spec and its provenance.
 
 <a id="GerritOpenApiSpecInfo"></a>
 

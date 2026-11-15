@@ -1,7 +1,6 @@
 # Implementation package. The .bzl files here are load-restricted to //openapi
 # (via visibility() in each file); consumers load only the public entry points
-# in //openapi (defs.bzl, generate.bzl, context.bzl, preview.bzl, toolchains.bzl,
-# providers.bzl).
+# in //openapi (report.bzl, defs.bzl, providers.bzl).
 
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
