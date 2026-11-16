@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Guard that the per-domain OpenAPI slices stay a faithful, fully-documented partition
-of the all-domain monolith -- so the two published "worlds" can never drift.
+"""Guard that every per-domain OpenAPI slice is a faithful projection of the all-domain
+monolith -- the invariant the projector (slice_projector.py) provides and this test
+locks in, so the two published "worlds" can never drift.
 
 Fed (as $(location) args, any order): the monolith spec, every per-domain slice spec,
 all-domain-modules.txt (the monolith's module set) and domain-modules.txt (the union of
@@ -23,12 +24,14 @@ OPENAPI_DOMAINS). The checks:
      the monolith but no slice (the omission that silently dropped gpgkeys/oauthtoken/
      metrics from the slices), nor in a slice but not the monolith.
   2. endpoint coverage -- union(slice endpoints) == monolith endpoints, disjoint slices.
-  3. documentation parity -- no slice endpoint or field is LESS documented than the
-     monolith's; endpoints the monolith itself leaves undocumented (a separate core-docs
-     gap) stay parity-neutral rather than failing here.
-  4. schema-name consistency -- every slice schema exists in the monolith, minus a
-     recorded allowlist of collision-disambiguated names (FileInfo/DescriptionInput/
-     Status) that an isolated per-domain emit does not rename.
+  3. operation equality -- each slice operation is byte-equal (deep-equal) to the
+     monolith's. Covers summary/description/parameters/responses in one assertion.
+  4. schema equality -- every slice schema exists in the monolith under the SAME name and
+     is deep-equal to it. This is what catches mis-attribution (plausible prose copied
+     from the wrong entity), which a presence-only check cannot. No naming allowlist: a
+     projected slice carries the monolith's names verbatim, so a divergent name is a bug.
+  5. reference resolution -- every $ref in a slice resolves within that slice's own
+     components (the projector must pull the full transitive schema closure).
 """
 
 import json
@@ -37,6 +40,7 @@ import sys
 import unittest
 
 _VERBS = ("get", "post", "put", "delete", "patch")
+_REF_PREFIX = "#/components/schemas/"
 
 
 def _load(path):
@@ -51,6 +55,33 @@ def _endpoints(spec):
         for v, o in methods.items()
         if v in _VERBS and isinstance(o, dict)
     }
+
+
+def _operations(spec):
+    return {
+        (v.upper(), p): o
+        for p, methods in spec.get("paths", {}).items()
+        for v, o in methods.items()
+        if v in _VERBS and isinstance(o, dict)
+    }
+
+
+def _schemas(spec):
+    return (spec.get("components", {}) or {}).get("schemas", {}) or {}
+
+
+def _ref_targets(obj, acc):
+    """Collect every $ref target string (any component kind), so the test can both check
+    schema refs resolve and reject non-schema refs the projector does not project."""
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if k == "$ref" and isinstance(v, str):
+                acc.add(v)
+            else:
+                _ref_targets(v, acc)
+    elif isinstance(obj, list):
+        for v in obj:
+            _ref_targets(v, acc)
 
 
 def _modules(path):
@@ -120,85 +151,96 @@ class DomainSlicesTest(unittest.TestCase):
         )
         self.assertEqual({}, overlaps, "endpoints emitted by more than one slice: %s" % overlaps)
 
-    def test_endpoint_documentation_parity(self):
-        """A slice endpoint is documented iff the monolith documents it. This is the
-        publishable bar: the slice must not LOSE prose the monolith has. Endpoints the
-        monolith itself leaves undocumented (a separate core-docs gap) stay parity-neutral
-        rather than failing here."""
-        mono = {}
-        for p, methods in MONOLITH.get("paths", {}).items():
-            for v, o in methods.items():
-                if v in _VERBS and isinstance(o, dict):
-                    mono[(v, p)] = (bool(o.get("summary")), bool(o.get("description")))
+    def test_operations_equal_monolith(self):
+        """Each slice operation is deep-equal to the monolith's -- a projection copies the
+        operation object verbatim, so any difference (summary, description, parameters,
+        responses) is drift."""
+        mono = _operations(MONOLITH)
         offenders = []
         for domain, spec in SLICES.items():
-            for p, methods in spec.get("paths", {}).items():
-                for v, o in methods.items():
-                    if v not in _VERBS or not isinstance(o, dict):
-                        continue
-                    got = (bool(o.get("summary")), bool(o.get("description")))
-                    want = mono.get((v, p))
-                    if want is not None and got != want:
-                        offenders.append(
-                            "%s: %s %s slice=%s monolith=%s" % (domain, v.upper(), p, got, want)
-                        )
+            for key, op in _operations(spec).items():
+                if mono.get(key) != op:
+                    offenders.append("%s: %s %s" % (domain, key[0], key[1]))
         self.assertEqual(
             [],
             sorted(offenders),
-            "slice endpoints less documented than the monolith: %s" % sorted(offenders),
+            "slice operations that differ from the monolith: %s" % sorted(offenders),
         )
 
-    def test_field_documentation_parity(self):
-        """For every schema present under the same name in both the monolith and a slice,
-        each shared field's description-presence must match -- the slice cannot drop a
-        field description the monolith carries."""
-        mono = (MONOLITH.get("components", {}) or {}).get("schemas", {}) or {}
-
-        def described(schema, field):
-            meta = (schema.get("properties") or {}).get(field)
-            return isinstance(meta, dict) and bool(meta.get("description"))
-
-        offenders = []
+    def test_schemas_equal_monolith(self):
+        """Every slice schema exists in the monolith under the SAME name and is deep-equal
+        to it. Catches both missing descriptions and prose mis-attributed from a different
+        entity (the projects DescriptionInput defect). No naming allowlist: a projected
+        slice carries the monolith's disambiguated names, so a divergent name is a bug, not
+        an accepted artifact."""
+        mono = _schemas(MONOLITH)
+        name_offenders = []
+        content_offenders = []
         for domain, spec in SLICES.items():
-            schemas = (spec.get("components", {}) or {}).get("schemas", {}) or {}
-            for name, schema in schemas.items():
+            for name, schema in _schemas(spec).items():
                 if name not in mono:
-                    continue  # name divergence is asserted separately below
-                for field in schema.get("properties") or {}:
-                    if field in (mono[name].get("properties") or {}):
-                        if described(schema, field) != described(mono[name], field):
-                            offenders.append("%s: %s.%s" % (domain, name, field))
+                    name_offenders.append("%s: %s" % (domain, name))
+                elif mono[name] != schema:
+                    content_offenders.append("%s: %s" % (domain, name))
         self.assertEqual(
             [],
-            sorted(offenders),
-            "slice fields whose description-presence differs from the monolith: %s"
-            % sorted(offenders),
+            sorted(name_offenders),
+            "slice schema names absent from the monolith (a projection must reuse the "
+            "monolith's names -- fix the naming, do not allowlist): %s" % sorted(name_offenders),
+        )
+        self.assertEqual(
+            [],
+            sorted(content_offenders),
+            "slice schemas whose content differs from the monolith (descriptions, required, "
+            "fields): %s" % sorted(content_offenders),
         )
 
-    # Collision-disambiguated types the monolith renames but an isolated per-domain emit
-    # does not (e.g. the monolith's ProjectsDescriptionInput is a bare DescriptionInput in
-    # the projects slice). A known artifact of per-module re-emit; recorded here so it is
-    # explicit, not silent, and so a NEW divergence still fails. Closing these is tracked
-    # as the follow-up to fully align slice schema names with the monolith.
-    KNOWN_NAME_DIVERGENCES = {
-        "FileInfo": "monolith disambiguates to CommonFileInfo/DiffFileMetaInfo variants",
-        "DescriptionInput": "monolith renames to Projects/Groups DescriptionInput",
-        "Status": "monolith disambiguates the account/config Status inputs",
-    }
+    def test_refs_resolve_within_slice(self):
+        """Every $ref in a slice is a schema ref that resolves within that slice's own
+        components. The projector projects ONLY #/components/schemas/*, so a $ref to any
+        other component would be dropped and dangle; the test rejects such refs (not only
+        unresolved schema refs) so the schemas-only assumption stays honest."""
+        dangling = []
+        unsupported = []
+        for domain, spec in SLICES.items():
+            present = set(_schemas(spec))
+            targets = set()
+            _ref_targets(spec.get("paths", {}), targets)
+            _ref_targets(_schemas(spec), targets)
+            for t in targets:
+                if not t.startswith(_REF_PREFIX):
+                    unsupported.append("%s: %s" % (domain, t))
+                elif t[len(_REF_PREFIX):] not in present:
+                    dangling.append("%s: %s" % (domain, t))
+        self.assertEqual(
+            [],
+            sorted(unsupported),
+            "slice $refs to a non-schema component (the projector projects only schemas, "
+            "so these dangle -- add generic component projection): %s" % sorted(unsupported),
+        )
+        self.assertEqual(
+            [],
+            sorted(dangling),
+            "slice $refs with no matching schema in the slice: %s" % sorted(dangling),
+        )
 
-    def test_slice_schema_names_exist_in_monolith(self):
-        mono = set((MONOLITH.get("components", {}) or {}).get("schemas", {}) or {})
+    def test_framing_equals_monolith(self):
+        """The document framing a slice copies wholesale from the monolith must be deep-equal
+        to it: the dialect, info, servers, security and the securitySchemes component. A
+        projection that dropped or altered any of these (e.g. lost the security config) would
+        otherwise pass every other check."""
+        mono_security_schemes = (MONOLITH.get("components", {}) or {}).get("securitySchemes")
         offenders = []
         for domain, spec in SLICES.items():
-            for name in (spec.get("components", {}) or {}).get("schemas", {}) or {}:
-                if name not in mono and name not in self.KNOWN_NAME_DIVERGENCES:
-                    offenders.append("%s: %s" % (domain, name))
+            for key in ("openapi", "info", "servers", "security", "tags"):
+                if spec.get(key) != MONOLITH.get(key):
+                    offenders.append("%s: %s" % (domain, key))
+            if (spec.get("components", {}) or {}).get("securitySchemes") != mono_security_schemes:
+                offenders.append("%s: components.securitySchemes" % domain)
         self.assertEqual(
             [],
             sorted(offenders),
-            "slice schema names absent from the monolith (new collision divergence -- add "
-            "to KNOWN_NAME_DIVERGENCES only after confirming, or fix the naming): %s"
-            % sorted(offenders),
+            "slice framing/security that differs from the monolith: %s" % sorted(offenders),
         )
 
 

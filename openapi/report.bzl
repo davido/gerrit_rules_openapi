@@ -11,6 +11,7 @@ compose -> emit chain for a plugin. Load only in generation packages; tag target
 
 load(
     "//openapi/internal:pipeline.bzl",
+    _openapi_domain_slice = "openapi_domain_slice",
     _openapi_endpoint_golden_test = "openapi_endpoint_golden_test",
     _openapi_endpoint_report = "openapi_endpoint_report",
     _openapi_json_gate_test = "openapi_json_gate_test",
@@ -20,6 +21,7 @@ load(
 
 openapi_endpoint_report = _openapi_endpoint_report
 openapi_plugin_spec = _openapi_plugin_spec
+openapi_domain_slice = _openapi_domain_slice
 openapi_endpoint_golden_test = _openapi_endpoint_golden_test
 openapi_json_gate_test = _openapi_json_gate_test
 openapi_spec_tests = _openapi_spec_tests

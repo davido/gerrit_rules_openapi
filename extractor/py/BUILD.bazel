@@ -62,3 +62,12 @@ py_binary(
     srcs = ["overrides_stale_edits.py"],
     main = "overrides_stale_edits.py",
 )
+
+# Projects a per-domain slice from the finalized all-domain document: the domain's
+# operations plus the transitive schema closure, copied verbatim. Replaces per-domain
+# re-emission (which recomputed schema names over the subset and so diverged).
+py_binary(
+    name = "slice_projector",
+    srcs = ["slice_projector.py"],
+    main = "slice_projector.py",
+)

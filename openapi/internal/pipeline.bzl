@@ -350,6 +350,57 @@ def openapi_plugin_spec(
         golden = inventory_golden,
     )
 
+def openapi_domain_slice(
+        name,
+        out,
+        monolith,
+        modules,
+        roots,
+        version,
+        src_prefix = ["com/google/gerrit/"],
+        tags = []):
+    """Emit a per-domain slice as a projection of the finalized all-domain document.
+
+    The domain's operation set comes from a `format = "inventory"` report over `modules`
+    -- cheap (no schema emission, hence no per-subset name recomputation). The slice is
+    then projected from `monolith`: the inventory's operations plus the transitive schema
+    closure, copied verbatim (names, descriptions, required). The slice is therefore a
+    literal subset of the all-domain document and cannot diverge from it, which is what a
+    per-domain re-emit could not guarantee (it renamed collision-disambiguated types and
+    then mined the wrong doc entity).
+
+    Args:
+        name: target name; also defines `<name>_inventory`.
+        out: output slice filename.
+        monolith: label of the finalized all-domain OpenAPI document to project from.
+        modules: the domain's REST module FQCNs (operation selection only).
+        roots: java_library roots defining the source universe (as for the monolith).
+        version: info.version, used only by the inventory report.
+        src_prefix: source-jar package prefixes to parse.
+        tags: tags applied to both generated targets (e.g. ["manual"]).
+    """
+    openapi_endpoint_report(
+        name = name + "_inventory",
+        out = name + "-inventory.generated.json",
+        format = "inventory",
+        modules = modules,
+        roots = roots,
+        src_prefix = src_prefix,
+        version = version,
+        tags = tags,
+    )
+    native.genrule(
+        name = name,
+        srcs = [monolith, ":" + name + "_inventory"],
+        outs = [out],
+        cmd = "$(location @gerrit_rules_openapi//extractor/py:slice_projector)" +
+              " --monolith $(location %s)" % monolith +
+              " --inventory $(location :%s_inventory)" % name +
+              " --out $(location %s)" % out,
+        tools = ["@gerrit_rules_openapi//extractor/py:slice_projector"],
+        tags = tags,
+    )
+
 def openapi_json_gate_test(name, script, inputs, **kwargs):
     """Run a py_test gate over generated OpenAPI artifacts.
 
