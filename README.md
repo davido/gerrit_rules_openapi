@@ -1,16 +1,16 @@
 # gerrit_rules_openapi
 
 Build-time Bazel **ruleset** that extracts an OpenAPI 3.1 document from Gerrit's
-REST bindings (**source → spec**). Not a Gerrit plugin — nothing here runs at
+REST bindings (**source → spec**). Not a Gerrit plugin. Nothing here runs at
 runtime. Gerrit core and plugins consume it via `bazel_dep`.
 
 ## How it works
 
 Java REST bindings supply the structure (operations, parameters, schema refs) and the
-handwritten REST docs supply the prose (summaries, descriptions, examples); the two are
+handwritten REST docs supply the prose (summaries, descriptions, examples). The two are
 composed on the HTTP method + REST path into an OpenAPI 3.1 document at build time, which
 a semantic gate then validates. Plugins run the same pipeline over their own bindings.
-Nothing is hand-edited — the document is a build output.
+Nothing is hand-edited. The document is a build output.
 
 ![Gerrit OpenAPI generation pipeline](resources/gerrit-openapi-pipeline.png)
 
@@ -24,8 +24,8 @@ Nothing is hand-edited — the document is a build output.
 
 ## Use it
 
-The consumer declares the generation pipeline over its own REST source + docs; the
-ruleset only carries the tools. `info.version` is passed in — the ruleset never reads
+The consumer declares the generation pipeline over its own REST source + docs. The
+ruleset only carries the tools. `info.version` is passed in. The ruleset never reads
 the host Gerrit version.
 
 ### Depend on the ruleset
@@ -79,9 +79,9 @@ bazel test  //tools/openapi:all_domain_golden_test       # REST-surface drift go
 
 ### 2. Plugin
 
-A Gerrit plugin (e.g. checks) wires the `openapi_plugin_spec` macro — the whole
-base → mine → compose → emit pipeline, plus the semantic gate and an endpoint-inventory
-golden test, in one call:
+A Gerrit plugin (e.g. checks) wires the `openapi_plugin_spec` macro, which runs the
+whole base → mine → compose → emit pipeline plus the semantic gate and an
+endpoint-inventory golden test in one call:
 
 ```python
 load("@gerrit_rules_openapi//openapi:report.bzl", "openapi_plugin_spec")
@@ -112,15 +112,16 @@ bazel test  //plugins/checks:checks_openapi_json_spec_test   # semantic gate
 See [`docs/report.md`](docs/report.md) for every attribute of both.
 
 Core and plugins drive the **same** two entry points above, and everything downstream
-flows from their output — one source of truth for the whole ecosystem: the published
+flows from their output, one source of truth for the whole ecosystem: the published
 [gerrit-openapi](https://github.com/davido/gerrit-openapi) spec distribution, the
 per-language [SDKs](https://github.com/davido/gerrit-openapi#generated-sdks) generated
 from it, and the in-Gerrit [Swagger-UI viewer](https://github.com/davido/gerrit-openapi-viewer).
 
 ## API reference
 
-Generated Starlark API docs (rendered from the rule docstrings with Stardoc;
-regenerate with `bazelisk run --config=docs //docs:update_docs`):
+Generated Starlark API docs, rendered from the rule docstrings with Stardoc.
+Regenerate with `bazelisk run --config=docs //docs:update_docs` and verify with
+`bazelisk test --config=docs //docs:update_docs_tests`:
 
 - [`openapi_endpoint_report`](docs/report.md) — the low-level rule core's `//tools/openapi` drives (base spec, merged spec, per-domain slices).
 - [`openapi_plugin_spec`](docs/report.md) — a plugin's full pipeline in one call.

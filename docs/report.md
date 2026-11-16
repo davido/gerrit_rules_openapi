@@ -141,3 +141,33 @@ document itself is a generated, unversioned build output guarded by
 | <a id="openapi_plugin_spec-inventory_golden"></a>inventory_golden |  Optional checked-in `.json` golden of the plugin's emitted endpoint inventory. When set, adds a byte-diff `<name>_golden_test` so REST-surface drift is reviewable. Records emitted plugin endpoints only.   |  `None` |
 
 
+<a id="openapi_spec_tests"></a>
+
+## openapi_spec_tests
+
+<pre>
+load("@gerrit_rules_openapi//openapi:report.bzl", "openapi_spec_tests")
+
+openapi_spec_tests(<a href="#openapi_spec_tests-name">name</a>, <a href="#openapi_spec_tests-spec">spec</a>, <a href="#openapi_spec_tests-inventory">inventory</a>, <a href="#openapi_spec_tests-golden">golden</a>, <a href="#openapi_spec_tests-kwargs">**kwargs</a>)
+</pre>
+
+Wire the spec-validation gate and the optional endpoint-drift golden.
+
+Produces `<name>_spec_test` (the semantic gate, which also checks the
+document's operations equal `inventory`) and, when `golden` is set,
+`<name>_golden_test` (byte-diffs `inventory` against the checked-in golden).
+Core and the plugin pipeline both call this.
+
+
+**PARAMETERS**
+
+
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="openapi_spec_tests-name"></a>name |  Prefix for the generated test targets.   |  none |
+| <a id="openapi_spec_tests-spec"></a>spec |  Label of the composed OpenAPI document.   |  none |
+| <a id="openapi_spec_tests-inventory"></a>inventory |  Label of the endpoint-inventory report.   |  none |
+| <a id="openapi_spec_tests-golden"></a>golden |  Checked-in inventory golden. Omit to skip the drift test.   |  `None` |
+| <a id="openapi_spec_tests-kwargs"></a>kwargs |  Extra test attributes (tags, visibility, ...).   |  none |
+
+

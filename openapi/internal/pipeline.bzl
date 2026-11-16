@@ -25,7 +25,7 @@ generator artifact) — a later step, when the plugin story is real.
 """
 
 load("@rules_java//java/common:java_info.bzl", "JavaInfo")
-load("@rules_python//python:defs.bzl", "py_binary", "py_test")
+load("@rules_python//python:defs.bzl", "py_test")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
 
 visibility(["//openapi:__subpackages__"])
