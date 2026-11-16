@@ -316,7 +316,10 @@ public final class SchemaGenerator {
       // Descend to the superclass, mapping its type parameters to this class's extends arguments
       // (each resolved to a concrete fqcn in the current context) so the substitution is stable.
       Tree ext = cur.tree.getExtendsClause();
-      String superName = AstUtil.lastIdent(ext);
+      // Full written form, so a fully-qualified "extends a.b.Base" is not truncated to
+      // the simple name "Base" (which would same-package-resolve to this subclass and
+      // stop the chain, dropping inherited fields).
+      String superName = AstUtil.dottedName(ext);
       ClassInfo sup = superName == null ? null : resolveType(superName, cur);
       if (sup == null || sup == cur) {
         break;
@@ -354,7 +357,7 @@ public final class SchemaGenerator {
       if (cur.tree == null) {
         break;
       }
-      String superName = AstUtil.lastIdent(cur.tree.getExtendsClause());
+      String superName = AstUtil.dottedName(cur.tree.getExtendsClause());
       cur = superName == null ? null : index.resolveClass(superName, cur);
     }
     String fqcn = uniqueSimpleToFqcn.get(simpleName(name));

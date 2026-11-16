@@ -1,0 +1,11 @@
+load("@rules_java//java:defs.bzl", "java_test")
+
+# Regression for the extractor's supertype / nested-type resolution. A plain main
+# that asserts and throws on mismatch, so no JUnit dependency is pulled in.
+java_test(
+    name = "resolution_test",
+    srcs = ["com/google/gerrit/openapi/parse/ResolutionTest.java"],
+    main_class = "com.google.gerrit.openapi.parse.ResolutionTest",
+    use_testrunner = False,
+    deps = ["//extractor/java:inventory_lib"],
+)

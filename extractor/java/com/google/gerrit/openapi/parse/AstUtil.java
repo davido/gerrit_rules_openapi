@@ -52,7 +52,10 @@ public final class AstUtil {
       if (cur.tree == null) {
         break;
       }
-      String superName = lastIdent(cur.tree.getExtendsClause());
+      // Resolve the superclass by its full written form: a fully-qualified
+      // "extends a.b.Base" must not be truncated to the simple name "Base", which
+      // would same-package-resolve to this subclass itself and cut the chain short.
+      String superName = dottedName(cur.tree.getExtendsClause());
       cur = superName == null ? null : resolveClass.apply(superName, cur);
     }
     return chain;

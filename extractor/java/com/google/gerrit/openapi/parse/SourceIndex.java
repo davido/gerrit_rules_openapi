@@ -158,15 +158,10 @@ public final class SourceIndex {
           (outer != null ? outer.fqcn : name.substring(0, dot)) + "." + name.substring(dot + 1);
       return byFqcn.get(nested);
     }
-    String imp = ctx.imports.get(name);
-    if (imp != null && byFqcn.containsKey(imp)) {
-      return byFqcn.get(imp);
-    }
-    String samePkg = ctx.packageName.isEmpty() ? name : ctx.packageName + "." + name;
-    if (byFqcn.containsKey(samePkg)) {
-      return byFqcn.get(samePkg);
-    }
-    // A nested class of ctx or an enclosing class (e.g. "Email" inside AccountResource).
+    // A member type of ctx or an enclosing class (e.g. "Email" inside AccountResource,
+    // or ReviewInput.CommentInput inside ReviewInput) shadows a single-type import and
+    // a same-package top-level class of the same simple name. JLS 6.5.5.1: the innermost
+    // scope wins, so this must be checked before the import and same-package lookups.
     String outer = ctx.fqcn;
     while (outer != null && outer.length() > ctx.packageName.length()) {
       if (byFqcn.containsKey(outer + "." + name)) {
@@ -174,6 +169,14 @@ public final class SourceIndex {
       }
       int lastDot = outer.lastIndexOf('.');
       outer = lastDot > ctx.packageName.length() ? outer.substring(0, lastDot) : null;
+    }
+    String imp = ctx.imports.get(name);
+    if (imp != null && byFqcn.containsKey(imp)) {
+      return byFqcn.get(imp);
+    }
+    String samePkg = ctx.packageName.isEmpty() ? name : ctx.packageName + "." + name;
+    if (byFqcn.containsKey(samePkg)) {
+      return byFqcn.get(samePkg);
     }
     return byFqcn.get(name);
   }

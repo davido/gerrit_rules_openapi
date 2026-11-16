@@ -132,10 +132,11 @@ SAME_FIELDS_AS = {
     "AccountDetailInfo": "AccountInfo",
     "ReviewerInfo": "AccountInfo",
     "ApprovalInfo": "AccountInfo",
-    # The comment family: RobotCommentInfo extends CommentInfo, and DraftInput shares
-    # the Comment base with it. CommentInfo is the richly-described source (CommentInput
-    # itself is undescribed), so both draw from it for their shared fields.
+    # The comment family: RobotCommentInfo extends CommentInfo, and CommentInput /
+    # DraftInput share the Comment base with it. CommentInfo is the richly-described
+    # source, so they draw from it for their shared fields.
     "RobotCommentInfo": "CommentInfo",
+    "CommentInput": "CommentInfo",
     "DraftInput": "CommentInfo",
     # TestSubmitRuleInfo documents itself as "has the same fields as SubmitRecord".
     "TestSubmitRuleInfo": "SubmitRecord",
