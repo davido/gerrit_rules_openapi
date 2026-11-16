@@ -138,19 +138,29 @@ SAME_FIELDS_AS = {
     "RobotCommentInfo": "CommentInfo",
     "CommentInput": "CommentInfo",
     "DraftInput": "CommentInfo",
+    # DiffWebLinkInfo extends WebLinkInfo; its doc table cross-references the base
+    # ("See WebLinkInfo") for the inherited fields instead of repeating the text.
+    "DiffWebLinkInfo": "WebLinkInfo",
     # TestSubmitRuleInfo documents itself as "has the same fields as SubmitRecord".
     "TestSubmitRuleInfo": "SubmitRecord",
 }
 
+# A field cell that only cross-references another entity ("See WebLinkInfo") carries
+# no real text, so the inherited base description replaces it rather than being kept.
+_CROSS_REF = re.compile(r"^See [A-Z]\w*\.?$")
+
 
 def apply_inherited_fields(entity_fields):
     """Fill each subtype in ``SAME_FIELDS_AS`` with its base entity's mined field
-    descriptions, for same-named fields it does not already describe (``setdefault``
-    so a subtype that re-documents a field keeps its own text). Mutates in place."""
+    descriptions. A field the subtype leaves undescribed, or describes only with a
+    bare "See <Base>" cross-reference, takes the base's text; a genuine subtype
+    description is kept. Mutates in place."""
     for sub, base in SAME_FIELDS_AS.items():
         dst = entity_fields.setdefault(sub, {})
         for fld, desc in entity_fields.get(base, {}).items():
-            dst.setdefault(fld, desc)
+            existing = dst.get(fld)
+            if existing is None or _CROSS_REF.fullmatch(existing):
+                dst[fld] = desc
 
 
 # Entities the docs name differently from the Java class the spec is keyed on: the

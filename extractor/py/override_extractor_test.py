@@ -155,6 +155,29 @@ class HelperTest(unittest.TestCase):
         self.assertEqual(ox.canon("/"), "/")
         self.assertEqual(ox.canon("/a/{x}/{y}"), "/a/{}/{}")
 
+    def test_inherited_fields_replace_cross_ref_placeholder(self):
+        # A subtype doc table may cross-reference its base ("See WebLinkInfo") for an
+        # inherited field; the base description must replace that placeholder, while a
+        # genuine subtype description is kept.
+        entity_fields = {
+            "WebLinkInfo": {
+                "name": "The text to be linkified.",
+                "url": "The link URL.",
+            },
+            "DiffWebLinkInfo": {
+                "name": "See WebLinkInfo",
+                "url": "See WebLinkInfo",
+                "show_on_unified_diff_view": "Whether to show on the unified diff.",
+            },
+        }
+        ox.apply_inherited_fields(entity_fields)
+        got = entity_fields["DiffWebLinkInfo"]
+        self.assertEqual(got["name"], "The text to be linkified.")
+        self.assertEqual(got["url"], "The link URL.")
+        self.assertEqual(
+            got["show_on_unified_diff_view"], "Whether to show on the unified diff."
+        )
+
     def test_clean_path(self):
         self.assertEqual(
             ox.clean_path("/x/snapshot.indexes HTTP/1.0"), "/x/snapshot.indexes"
