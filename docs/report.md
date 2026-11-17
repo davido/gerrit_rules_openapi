@@ -43,6 +43,42 @@ Emits the endpoint inventory JSON from the roots' transitive source jars.
 | <a id="openapi_endpoint_report-version"></a>version |  info.version for the emitted OpenAPI document, passed by the consumer.   | String | required |  |
 
 
+<a id="openapi_domain_slice"></a>
+
+## openapi_domain_slice
+
+<pre>
+load("@gerrit_rules_openapi//openapi:report.bzl", "openapi_domain_slice")
+
+openapi_domain_slice(<a href="#openapi_domain_slice-name">name</a>, <a href="#openapi_domain_slice-out">out</a>, <a href="#openapi_domain_slice-monolith">monolith</a>, <a href="#openapi_domain_slice-modules">modules</a>, <a href="#openapi_domain_slice-roots">roots</a>, <a href="#openapi_domain_slice-version">version</a>, <a href="#openapi_domain_slice-src_prefix">src_prefix</a>, <a href="#openapi_domain_slice-tags">tags</a>)
+</pre>
+
+Emit a per-domain slice as a projection of the finalized all-domain document.
+
+The domain's operation set comes from a `format = "inventory"` report over `modules`
+-- cheap (no schema emission, hence no per-subset name recomputation). The slice is
+then projected from `monolith`: the inventory's operations plus the transitive schema
+closure, copied verbatim (names, descriptions, required). The slice is therefore a
+literal subset of the all-domain document and cannot diverge from it, which is what a
+per-domain re-emit could not guarantee (it renamed collision-disambiguated types and
+then mined the wrong doc entity).
+
+
+**PARAMETERS**
+
+
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="openapi_domain_slice-name"></a>name |  target name; also defines `<name>_inventory`.   |  none |
+| <a id="openapi_domain_slice-out"></a>out |  output slice filename.   |  none |
+| <a id="openapi_domain_slice-monolith"></a>monolith |  label of the finalized all-domain OpenAPI document to project from.   |  none |
+| <a id="openapi_domain_slice-modules"></a>modules |  the domain's REST module FQCNs (operation selection only).   |  none |
+| <a id="openapi_domain_slice-roots"></a>roots |  java_library roots defining the source universe (as for the monolith).   |  none |
+| <a id="openapi_domain_slice-version"></a>version |  info.version, used only by the inventory report.   |  none |
+| <a id="openapi_domain_slice-src_prefix"></a>src_prefix |  source-jar package prefixes to parse.   |  `["com/google/gerrit/"]` |
+| <a id="openapi_domain_slice-tags"></a>tags |  tags applied to both generated targets (e.g. ["manual"]).   |  `[]` |
+
+
 <a id="openapi_endpoint_golden_test"></a>
 
 ## openapi_endpoint_golden_test
